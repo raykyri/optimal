@@ -1,0 +1,32 @@
+.input-append
+{
+  position: relative;
+  top: 10px;
+  }
+
+.well
+{
+  position: relative;
+  height: 624px;
+  width: 280px;
+  padding: 8px 0;
+ }
+
+.pull-down
+{
+  position: absolute;
+  left: 16px;
+  bottom: 8px;
+  width: 250px;
+  }
+
+.jxgbox
+{
+  margin-bottom: 10px;
+  height: 640px;
+ }
+
+body
+{ 
+  padding-bottom: 50px;
+ }

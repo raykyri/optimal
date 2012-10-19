@@ -1,0 +1,24 @@
+
+Week 1 - 10/11/12
+    week 1 of 10 not including holidays
+    set up web page with function type chooser
+    set up some default functions
+    decided upon a javascript graphing engine and got it working
+    ability to scale function ON GRAPH only
+    ability to overlay functions
+    ability to add multiple functions
+
+Week 2 - 10/18/12
+    [immediate todos]
+    the other default functions
+    keep track of the functions on the graph
+    keep track of the parameters of functions
+    allow parameters to be "fixed" or "freed" and modified by dragging/creating points on the graph
+    allow shift-click-and-drag to clone a graph instantly
+    figure out a way to symbolically represent transformations
+    figure out a way to symbolically represent the JSMath function, if possible
+        
+Week 3 - Midterms week and Fall Break
+    implement additional transforms and controls for them (reflection, rotation, etc.)
+    polish the front-end, make cloning/etc. easy
+    should be ready for UXE
