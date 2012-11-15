@@ -36,7 +36,7 @@ textarea#data
   font: 13px Menlo, Monaco, monospace;
   padding: 5px;
   width: 240px;
-  min-height: 270px;
+  height: 445px;
  }
 
 .left-right
@@ -57,9 +57,15 @@ textarea#data
   clear: both;
  }
 
-.left-right .btn-toolbar
+.btn-toolbar
 { 
   /* some random hacks */
   text-transform: none;
   margin-top: 4px;
+ }
+
+.disabled
+{ 
+  opacity: 0.4;
+  pointer-events: none;
  }

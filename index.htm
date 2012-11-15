@@ -26,13 +26,6 @@
           <div class="well">
             <ul class="nav nav-list">
               
-              <li class="nav-header">
-                Data
-              </li>
-              <li>
-                <textarea onclick="javascript:$(this).removeAttr('onclick').empty();"
-                          id="data">Enter function data here...</textarea>
-              </li>
               
               <li class="nav-header">
                 <div class="left-right">
@@ -40,7 +33,7 @@
                   <div>Y-Axis</div>
                 </div>
               </li>
-              <li class="nav-header"> 
+              <li class="nav-header disabled"> 
                 <div class="left-right">
                   <div class="btn-toolbar">
                   <div class="btn-group" data-toggle="buttons-radio">
@@ -56,8 +49,30 @@
                   </div>
                 </div>
               </li>
+
+              <li class="nav-header">
+                Data
+              </li>
+              <li>
+                <textarea onclick="javascript:$(this).removeAttr('onclick').empty();"
+                          id="data">Enter function data here...</textarea>
+              </li>
+
+              <li>
+                <div class="btn-toolbar">
+                  <div class="btn-group">
+                    <a href="#" onclick="update();" class="btn"><strong>Preview Graph</strong></a>
+                  </div>
+                  <div class="btn-group">
+                    <a href="#" onclick="update();" class="btn"><strong>Get Output</strong></a>
+                  </div>
+                </div>
+              </li>
+
+              <li>
+                <small>Shift-drag to pan. Zoom using mouse wheel.</small>
+              </li>
               
-              <li class="pull-down"><a href="#controls"><i class="icon-download-alt"></i> Download Output</a></li>
             </ul>
           </div>
         </div>
