@@ -2,7 +2,7 @@
 <html>
   <head>
     <title>Extraction</title>
-
+    
     <!--[if lt IE 9]>
         <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
         <![endif]-->
@@ -10,100 +10,65 @@
     <link rel="stylesheet" href="css/bootstrap.min.css"/>
     <link rel="stylesheet" href="css/bootstrap-responsive.min.css"/>
     <link rel="stylesheet" href="css/jsxgraph.css"/>
+    <link rel="stylesheet" href="css/atooltip.css"/>
     <link rel="stylesheet" href="css/style.css"/>
     <script type="text/javascript" src="js/jquery.min.js"></script>
+    <script type="text/javascript" src="js/jquery.atooltip.js"></script>
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
     <script type="text/javascript" src="js/jsxgraphcore.js"></script>
   </head>
   <body>
-
+    
     <div class="container">
-
-      <header class="jumbotron masthead">
-        <div class="inner">
-          <h2>ORF375_F12</h2>
-          <p>Belief extraction for optimal learning</p>
-        </div>
-      </header>
-
-
-      <div class="btn-toolbar">
-        <div class="btn-group" data-toggle="buttons-radio">
-          <a href="#controls" class="btn active"><strong>Lin</strong></a>
-          <a href="#controls" class="btn"><strong>Log</strong></a>
-        </div>
-        <div class="btn-group" data-toggle="buttons-radio">
-          <a href="#controls" class="btn active"><strong>Lin</strong></a>
-          <a href="#controls" class="btn"><strong>Log</strong></a>
-        </div>
-        <a href="javascript:initializeBoard();" class="btn"><i class="icon-trash"></i> <strong>Clear</strong></a>
-        <a href="#controls" class="btn"><i class="icon-align-justify"></i> <strong>List</strong></a>
-
-          <div class="btn-group">
-            <form class="form-search">
-              <div class="input-append">
-                <input type="text" class="span2" id="functionInput" value="log(x)">
-                <input type="button" class="btn" value="Add" 
-                       onClick="addFunction(document.getElementById('functionInput').value);" />
-              </div>
-            </form>
-          </div>
-      </div>
-
+      
       <div class="row" id="controls">
         <div class="span3 sidebar-nav">
           <div class="well">
             <ul class="nav nav-list">
-              <li class="nav-header">Draw</li>
-              <li><a href="#controls"><i class="icon-pencil"></i> Add Function</a></li>
-              <li><a href="#controls"><i class="icon-edit"></i> Edit Function</a></li>
-              <li class="nav-header">Function</li>              
-              <li><a href="#controls"><i class="icon-screenshot"></i> Add Point</a></li>
-              <li><a href="#controls"><i class="icon-remove"></i> Remove Point</a></li>
-              <li><a href="#controls"><i class="icon-tasks"></i> Edit Parameters</a></li>
-              <li><a href="#controls"><i class="icon-eye-open"></i> Show All</a></li>
-              <li><a href="#controls"><i class="icon-eye-close"></i> Hide All</a></li>
-              <li class="nav-header">Domain</li>
-              <li><a href="#controls"><i class="icon-resize-full"></i> Limit Region</a></li>
-              <li><a href="#controls"><i class="icon-resize-vertical"></i> Limit X</a></li>
-              <li><a href="#controls"><i class="icon-resize-horizontal"></i> Limit Y</a></li>
-              <li class="nav-header">Transforms</li>
-              <li><a href="#controls"><i class="icon-move"></i> Translate</a></li>
-              <li><a href="#controls"><i class="icon-repeat"></i> Rotate</a></li>
-              <li><a href="#controls"><i class="icon-resize-full"></i> Scale Proportional</a></li>
-              <li><a href="#controls"><i class="icon-resize-vertical"></i> Scale X</a></li>
-              <li><a href="#controls"><i class="icon-resize-horizontal"></i> Scale Y</a></li>
+              
+              <li class="nav-header">
+                Data
+              </li>
+              <li>
+                <textarea onclick="javascript:$(this).removeAttr('onclick').empty();"
+                          id="data">Enter function data here...</textarea>
+              </li>
+              
+              <li class="nav-header">
+                <div class="left-right">
+                  <div>X-Axis</div>
+                  <div>Y-Axis</div>
+                </div>
+              </li>
+              <li class="nav-header"> 
+                <div class="left-right">
+                  <div class="btn-toolbar">
+                  <div class="btn-group" data-toggle="buttons-radio">
+                    <a href="#controls" class="btn active"><strong>Lin</strong></a>
+                    <a href="#controls" class="btn"><strong>Log</strong></a>
+                  </div>
+                </div>
+                  <div class="btn-toolbar">
+                    <div class="btn-group" data-toggle="buttons-radio">
+                      <a href="#controls" class="btn active"><strong>Lin</strong></a>
+                      <a href="#controls" class="btn"><strong>Log</strong></a>
+                    </div>
+                  </div>
+                </div>
+              </li>
+              
               <li class="pull-down"><a href="#controls"><i class="icon-download-alt"></i> Download Output</a></li>
             </ul>
           </div>
         </div>
-
+        
         <div class="span9">
-          <div id="box" class="jxgbox"></div>
+          <div id="box" class="jxgbox" title="Loading..."></div>
         </div>
       </div>
-
-      <div class="row" id="listings">
-
-        <div class="span6">
-            <ul class="nav nav-list" id="transformations-list">
-              <li class="nav-header">
-                Transformations
-              </li>
-            </ul>
-        </div>
-
-        <div class="span6">
-          <ul class="nav nav-list" id="functions-list">
-            <li class="nav-header">
-                Functions
-            </li>
-          </ul>
-        </div>
-
-      </div>
-
     </div>
-    <script type="text/javascript" src="js/app.js"></script>
-  </body>
+    
+</div>
+<script type="text/javascript" src="js/app.js"></script>
+</body>
 </html>

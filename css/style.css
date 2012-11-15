@@ -1,8 +1,8 @@
-.input-append
-{
-  position: relative;
-  top: 10px;
-  }
+body
+{ 
+  margin-top: 50px;
+  padding-bottom: 50px;
+ }
 
 .well
 {
@@ -26,7 +26,40 @@
   height: 640px;
  }
 
-body
+.nav > li > a.selected 
 { 
-  padding-bottom: 50px;
+  background-color: #eee;
+}
+
+textarea#data
+{ 
+  font: 13px Menlo, Monaco, monospace;
+  padding: 5px;
+  width: 240px;
+  min-height: 270px;
+ }
+
+.left-right
+{ 
+  position: relative;
+ }
+
+.left-right div
+{ 
+  width: 50%;
+  padding: none;
+  margin: none;
+  float: left;
+ }
+
+.left-right:after
+{ 
+  clear: both;
+ }
+
+.left-right .btn-toolbar
+{ 
+  /* some random hacks */
+  text-transform: none;
+  margin-top: 4px;
  }
