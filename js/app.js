@@ -25,21 +25,16 @@ var function_options = {
   withLabel: false
 };
 
-function dataTable() {
-  return $('#datatable').data().handsontable;
+function dataTables() {
+  return $.map($('.datatable'), function(o,i) {
+    return $('.datatable:eq(' + i +')').data().handsontable;
+  });
 }
 
-
-// TODO: there is only one-way binding from the graph back to the data table
-// we need to add binding the other way, which involes refactoring this method
-// to separate code for resetting the app from code to set up new rows
-// upon adding a row, we should detect that and bind it to the graph
-function update() {
-
-  /* old code for text box
+function importData() {
   // sanitize data
   var points = [];
-  var data = $('#data').val()
+  var data = $('#datatable').val()
     .split('\n');
   $.each(data, function(i,o) {
     var point = o.split(/[,\ \t]+/);
@@ -48,27 +43,7 @@ function update() {
     point = $.map(point, function(o,i) { return o*1; }); // cast to float
     points.push(point);
   });
-  */
 
-  var data = dataTable().getData();
-  var points = $.map(data, function(o,i) {
-    return [[o[0]*1, o[1]*1]]; // create floats from decimal or scientific notation
-  });
-  
-  // split data into separate functions
-  var segments = [];
-  var last_x = Number.POSITIVE_INFINITY;
-  $.each(points, function(i,o) {
-    if (o.length !== 2) return;
-    if (o[0] < last_x) {
-      var s = [];
-      s.index = i;
-      segments.push(s);
-    }
-    last_x = o[0];
-    segments[segments.length-1].push(o);
-  });
-  
   // calculate bounds of data
   var min_x, min_y, max_x, max_y;
   $.each(points, function(i,o) {
@@ -82,51 +57,62 @@ function update() {
   var range_y = max_y - min_y;
   var margin = 0.1;
   
-  // graph everything
+  // reset graph viewport
   initializeBoard([
     min_x - range_x * margin,
     max_y + range_y * margin,
     max_x + range_x * margin,
     min_y - range_y * margin
   ]);
-  var functions = [];
+
+  // split data into separate functions
+  var segments = [];
+  var last_x = Number.POSITIVE_INFINITY;
+  $.each(points, function(i,o) {
+    if (o.length !== 2) return;
+    if (o[0] < last_x) {
+      var s = [];
+      s.index = i;
+      segments.push(s);
+    }
+    last_x = o[0];
+    segments[segments.length-1].push(o);
+  });
+
+  // add functions
   $.each(segments, function(i,o) {
     if (o.length < 2) return;
     addFunction(o);
+  });
+
+  // switch to functions tab
+  $('#datatable').empty();
+  $('.nav-tabs a[href="#functions"]').tab('show');
+}
+
+function update() {
+  var points = $.map(data, function(o,i) {
+    return [[o[0]*1, o[1]*1]]; // create floats from decimal or scientific notation
   });
 }
 
 // reset the app
 function reset() {
-  dataTable().clear();
+  $.each(dataTables(), function(i,o) {
+      o.clear();
+  });
+  $('#datatables').empty();
   initializeBoard();
 }
 
 // initialize the app
 function initialize() {
-  initializeTable();
   initializeBoard();
   //$('#box').aToolTip();
 }
 
 // set up the jQuery data table
 function initializeTable() {
-  $("#datatable").handsontable({
-    startRows: 20,
-    startCols: 2,
-    rowHeaders: false,
-    colHeaders: ['X', 'F(X)'],
-    minSpareRows: 1,
-    minWidth: 400,
-    maxWidth: 20,
-    fillHandle: true,
-    onBeforeChange: function (data) {
-      // TODO: reject non-numerical values
-      for (var i = data.length - 1; i >= 0; i--) {
-        if (data[i][3] === "nuke") return false;
-      }
-    }
-  });
 }
 
 // remove all functions from board
@@ -142,20 +128,49 @@ function initializeBoard(boundingbox) {
 function addFunction(points_data) {
   board.suspendUpdate();
   
+  var elem = $('<div class="datatable"></div>')
+    .appendTo('#datatables');
+  elem.handsontable({
+    startRows: 20,
+    startCols: 2,
+    rowHeaders: false,
+    colHeaders: ['X', 'F(X)'],
+    minSpareRows: 1,
+    minWidth: 400,
+    maxWidth: 20,
+    fillHandle: true,
+    onChange: function(data) {
+      var data_table = elem.data().handsontable;
+      if (!data_table.listening) return;
+      console.log('changing')
+      $.each(data_table.drawnElements, function(i,o) {
+        //o.remove();
+      });
+      drawFunction(points_data, data_table);        
+    },
+    onBeforeChange: function (data) {
+      // TODO: reject non-numerical values
+      for (var i = data.length - 1; i >= 0; i--) {
+        if (data[i][3] === "nuke") return false;
+      }
+    }
+  });
+
+  var data_table = elem.data().handsontable;
+  data_table.drawnElements = drawFunction(points_data, data_table);
+  $.each(points_data, function(i,o) {
+    data_table.setDataAtCell(i, 0, o[0]);
+    data_table.setDataAtCell(i, 1, o[1]);
+  });
+  data_table.listening = true;
+}
+
+function drawFunction(points_data, data_table) {
   var points = $.map(points_data, function(o,i) {
     var p = board.create('point', o, point_options);
-    p.index = points_data.index + i;
     JXG.addEvent(p.rendNode, 'mouseup', function(e) {
-      // get index of point in data table
-      var index = points_data.index + i; 
-      // x = dataTable().getDataAtCell(index, 0) * 1
-      // y = dataTable().getDataAtCell(index, 1) * 1
-      // reorder points in the function accordingly
-      
-      dataTable().setDataAtCell(index, 0, p.coords.usrCoords[1]);
-      dataTable().setDataAtCell(index, 1, p.coords.usrCoords[2]);
-      
-
+      data_table.setDataAtCell(i, 0, p.coords.usrCoords[1]);
+      data_table.setDataAtCell(i, 1, p.coords.usrCoords[2]);
     }, p);
     return p;
   });
@@ -163,7 +178,6 @@ function addFunction(points_data) {
   var x_min = points_data[0][0];
   var x_max = points_data[points_data.length-1][0];
   var f = board.create('spline', points, function_options);
-  f.index = points_data.index;
   JXG.addEvent(f.rendNode, 'click', function(e) {
     // do stuff to the function
   }, f);
@@ -176,6 +190,7 @@ function addFunction(points_data) {
   // http://jsxgraph.uni-bayreuth.de/wiki/index.php/Least-squares_line_fitting
   
   board.unsuspendUpdate();
+  return [f].concat(points);
 }
 
 // set a tooltip when hovering over the graph

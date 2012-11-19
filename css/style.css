@@ -53,22 +53,40 @@ body
 
 #datatable
 { 
-  /* font: 13px Menlo, Monaco, monospace; */
+  font: 13px Menlo, Monaco, monospace;
+  padding: 5px;
+  margin-bottom: 5px;
+  width: 240px;
+  height: 505px;
+ }
+
+#datatables
+{ 
+  max-height: 425px;
   margin-bottom: 15px;
+  width: 265px;
+  overflow-x: hidden;
+  overflow-y: scroll;
+ }
+
+.datatable
+{ 
+  /* font: 13px Menlo, Monaco, monospace; */
+  margin-bottom: 5px;
   width: 250px;
-  height: 420px;
+  height: 80px;
   overflow-x: hidden;
   border: 1px solid #ccc;
 }
 
-#datatable .virtualScroll 
+.datatable .virtualScroll 
 { 
   margin: -1px;
   overflow-y: scroll !important;
   overflow-x: hidden !important;
  }
 
-#datatable .handsontable
+.datatable .handsontable
 { 
   margin: -1px;
  }
