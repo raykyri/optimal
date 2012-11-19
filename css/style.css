@@ -7,9 +7,11 @@ body
 .well
 {
   position: relative;
-  height: 624px;
+  height: 590px;
   width: 280px;
   padding: 8px 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
  }
 
 .pull-down
@@ -26,17 +28,49 @@ body
   height: 640px;
  }
 
+.nav-tabs > .active > a, .nav-tabs > .active > a:hover 
+{ 
+  background-color: #f5f5f5;
+  position: relative;
+  top: 1px;
+  z-index: 1000;
+ }
+
 .nav > li > a.selected 
 { 
   background-color: #eee;
 }
 
-textarea#data
+.tab-content
 { 
-  font: 13px Menlo, Monaco, monospace;
-  padding: 5px;
-  width: 240px;
-  height: 445px;
+  overflow: visible;
+ }
+
+.nav-tabs
+{ 
+  margin-bottom: -1px;
+ }
+
+#datatable
+{ 
+  /* font: 13px Menlo, Monaco, monospace; */
+  margin-bottom: 15px;
+  width: 250px;
+  height: 420px;
+  overflow-x: hidden;
+  border: 1px solid #ccc;
+}
+
+#datatable .virtualScroll 
+{ 
+  margin: -1px;
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+ }
+
+#datatable .handsontable
+{ 
+  margin: -1px;
  }
 
 .left-right

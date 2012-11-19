@@ -10,10 +10,12 @@
     <link rel="stylesheet" href="css/bootstrap.min.css"/>
     <link rel="stylesheet" href="css/bootstrap-responsive.min.css"/>
     <link rel="stylesheet" href="css/jsxgraph.css"/>
-    <link rel="stylesheet" href="css/atooltip.css"/>
+    <link rel="stylesheet" href="css/jquery.atooltip.css"/>
+    <link rel="stylesheet" href="css/jquery.handsontable.css"/>
     <link rel="stylesheet" href="css/style.css"/>
     <script type="text/javascript" src="js/jquery.min.js"></script>
     <script type="text/javascript" src="js/jquery.atooltip.js"></script>
+    <script type="text/javascript" src="js/jquery.handsontable.js"></script>
     <script type="text/javascript" src="js/bootstrap.min.js"></script>
     <script type="text/javascript" src="js/jsxgraphcore.js"></script>
   </head>
@@ -23,57 +25,90 @@
       
       <div class="row" id="controls">
         <div class="span3 sidebar-nav">
-          <div class="well">
-            <ul class="nav nav-list">
-              
-              
-              <li class="nav-header">
-                <div class="left-right">
-                  <div>X-Axis</div>
-                  <div>Y-Axis</div>
-                </div>
-              </li>
-              <li class="nav-header disabled"> 
-                <div class="left-right">
-                  <div class="btn-toolbar">
-                  <div class="btn-group" data-toggle="buttons-radio">
-                    <a href="#controls" class="btn active"><strong>Lin</strong></a>
-                    <a href="#controls" class="btn"><strong>Log</strong></a>
-                  </div>
-                </div>
-                  <div class="btn-toolbar">
-                    <div class="btn-group" data-toggle="buttons-radio">
-                      <a href="#controls" class="btn active"><strong>Lin</strong></a>
-                      <a href="#controls" class="btn"><strong>Log</strong></a>
+          
+          <ul class="nav nav-tabs">
+            <li class="active"><a href="#data" data-toggle="tab">Data Editor</a></li>
+            <li><a href="#functions" data-toggle="tab">Function Editor</a></li>
+          </ul>
+          
+          <div class="tab-content">
+            <div class="tab-pane active" id="data">
+              <div class="well">
+                <ul class="nav nav-list">
+                  
+                  
+                  <li class="nav-header">
+                    <div class="left-right">
+                      <div>X-Axis</div>
+                      <div>Y-Axis</div>
                     </div>
-                  </div>
-                </div>
-              </li>
+                  </li>
+                  <li class="nav-header disabled"> 
+                    <div class="left-right">
+                      <div class="btn-toolbar">
+                        <div class="btn-group" data-toggle="buttons-radio">
+                          <a href="#controls" class="btn active"><strong>Lin</strong></a>
+                          <a href="#controls" class="btn"><strong>Log</strong></a>
+                        </div>
+                      </div>
+                      <div class="btn-toolbar">
+                        <div class="btn-group" data-toggle="buttons-radio">
+                          <a href="#controls" class="btn active"><strong>Lin</strong></a>
+                          <a href="#controls" class="btn"><strong>Log</strong></a>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  
+                  <li class="nav-header">
+                    Data
+                  </li>
+                  <li>
+                    <div id="datatable"></div>
+                    <!-- <textarea onclick="javascript:$(this).removeAttr('onclick').empty();"
+                         id="data">Enter function data here...</textarea> -->
+                  </li>
+                  
+                  <li>
+                    <div class="btn-toolbar">
+                      <div class="btn-group">
+                        <a href="#" onclick="reset();" class="btn">
+                          <strong>Reset</strong>
+                        </a>
+                      </div>
+                      <div class="btn-group">
+                        <a href="#" onclick="update();" class="btn">
+                          <strong>
+                          <i class="icon-search"></i> Get Covariances</strong>
+                        </a>
+                      </div>
+                    </div>
+                  </li>
+                  
+                  <li>
+                    <small>Shift-drag to pan. Zoom using mouse wheel.</small>
+                  </li>
+                  
+                </ul>
+              </div>
+            </div>
+            <div class="tab-pane" id="functions">
+              <div class="well">
+                <ul class="nav nav-list">
+                
+                <li class="nav-header">
+                  Functions
+                </li>
+                <li>
+                  <ul id="function-list">
+                  </ul>
+                </li>
 
-              <li class="nav-header">
-                Data
-              </li>
-              <li>
-                <textarea onclick="javascript:$(this).removeAttr('onclick').empty();"
-                          id="data">Enter function data here...</textarea>
-              </li>
-
-              <li>
-                <div class="btn-toolbar">
-                  <div class="btn-group">
-                    <a href="#" onclick="update();" class="btn"><strong>Preview Graph</strong></a>
-                  </div>
-                  <div class="btn-group">
-                    <a href="#" onclick="update();" class="btn"><strong>Get Output</strong></a>
-                  </div>
-                </div>
-              </li>
-
-              <li>
-                <small>Shift-drag to pan. Zoom using mouse wheel.</small>
-              </li>
-              
-            </ul>
+                </ul>                
+              </div>
+            </div>
+            
+            
           </div>
         </div>
         
