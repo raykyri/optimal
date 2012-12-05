@@ -1,6 +1,36 @@
-body
+/* **********************************************************************
+   Page Layout
+   */
+
+html, body
 { 
-  margin-top: 50px;
+  position: relative;
+  height: 100%;
+  width: 100%;
+ }
+
+.header
+{ 
+  position: fixed;
+  width: 100%;
+  top: 0px;
+  left: 0px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #eee;
+ }
+
+.header .title
+{ 
+  width: 1160px;
+  margin: 0 auto;
+  height: 20px;
+  padding: 10px 0;
+  font-weight: bold;
+ }
+
+.container
+{ 
+  margin-top: 70px;
   padding-bottom: 50px;
  }
 
@@ -8,7 +38,7 @@ body
 {
   position: relative;
   height: 590px;
-  width: 280px;
+  width: 380px;
   padding: 8px 0;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
@@ -19,7 +49,7 @@ body
   position: absolute;
   left: 16px;
   bottom: 8px;
-  width: 250px;
+  width: 350px;
   }
 
 .jxgbox
@@ -28,11 +58,15 @@ body
   height: 640px;
  }
 
+.nav-tabs > li > a
+{ 
+  position: relative;
+  top: 1px;
+}
+
 .nav-tabs > .active > a, .nav-tabs > .active > a:hover 
 { 
   background-color: #f5f5f5;
-  position: relative;
-  top: 1px;
   z-index: 1000;
  }
 
@@ -51,12 +85,33 @@ body
   margin-bottom: -1px;
  }
 
+/* **********************************************************************
+   Function Picker
+   */
+
+.thumbnails > li
+{ 
+  margin-right: -18px;
+  margin-bottom: 0px;
+  margin-top: 5px;
+  }
+
+.thumbnails .caption h5
+{ 
+  margin-top: 2px;
+  margin-bottom: 5px;
+ }
+
+/* **********************************************************************
+   Function Editor
+   */
+
 #datatable
 { 
   font: 13px Menlo, Monaco, monospace;
   padding: 5px;
   margin-bottom: 5px;
-  width: 240px;
+  width: 340px;
   height: 505px;
  }
 
@@ -64,7 +119,7 @@ body
 { 
   max-height: 425px;
   margin-bottom: 15px;
-  width: 265px;
+  width: 365px;
   overflow-x: hidden;
   overflow-y: scroll;
  }
@@ -73,7 +128,7 @@ body
 { 
   /* font: 13px Menlo, Monaco, monospace; */
   margin-bottom: 5px;
-  width: 250px;
+  width: 350px;
   height: 80px;
   overflow-x: hidden;
   border: 1px solid #ccc;
@@ -91,12 +146,12 @@ body
   margin: -1px;
  }
 
-.left-right
+.left-right, .left-mid-right
 { 
   position: relative;
  }
 
-.left-right div
+.left-right div, .left-mid-right div
 { 
   width: 50%;
   padding: none;
@@ -104,7 +159,12 @@ body
   float: left;
  }
 
-.left-right:after
+.left-mid-right div
+{ 
+  width: 33%;
+}
+
+.left-right:after, .left-mid-right:after
 { 
   clear: both;
  }
