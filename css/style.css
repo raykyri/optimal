@@ -2,13 +2,6 @@
    Page Layout
    */
 
-html, body
-{ 
-  position: relative;
-  height: 100%;
-  width: 100%;
- }
-
 .header
 { 
   position: fixed;
@@ -17,15 +10,33 @@ html, body
   left: 0px;
   background-color: #f5f5f5;
   border-bottom: 1px solid #eee;
+  z-index: 9999;
+ }
+
+.header .header-content
+{ 
+  position: relative;
+  width: 1160px;
+  margin: 0 auto;
+  height: 40px;
+ }
+
+.header .title, .header .subtitle
+{ 
+  position: absolute;
+  top: 0px;
+  padding: 10px 0;
  }
 
 .header .title
 { 
-  width: 1160px;
-  margin: 0 auto;
-  height: 20px;
-  padding: 10px 0;
+  left: 0px;
   font-weight: bold;
+ }
+
+.header .subtitle
+{ 
+  right: 0px;
  }
 
 .container
@@ -129,7 +140,7 @@ html, body
   /* font: 13px Menlo, Monaco, monospace; */
   margin-bottom: 5px;
   width: 350px;
-  height: 80px;
+  height: 100px;
   overflow-x: hidden;
   border: 1px solid #ccc;
 }

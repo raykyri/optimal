@@ -4,7 +4,7 @@
 
 var board;
 var state = {
-  copy_mode: false,
+  copy_mode: true,
   functionmodel: JXG.Math.Numerics.lagrangePolynomial
 };
 
@@ -45,6 +45,20 @@ function reset() {
 // initialize the app
 function initialize() {
   initializeBoard();
+  $('#xaxis-lin').click(function() {
+    // TODO
+  });
+  $('#xaxis-log').click(function() {
+    // TODO
+  });
+  $('#yaxis-lin').click(function() {
+    // TODO
+  });
+  $('#yaxis-log').click(function() {
+    // TODO
+  });
+  $('#func-copy').click(function() { state.copy_mode = true; });
+  $('#func-edit').click(function() { state.copy_mode = false; });
   //$('#box').aToolTip();
 }
 
@@ -125,21 +139,41 @@ function initializeTable() {
    Import Data tab
 */
 
-// import data from the textarea
-function importData() {
-
-  // sanitize data
-  var points = [];
-  var data = $('#datatable').val().trim().split('\n');
-  if (data.length === 0) return;
-  $.each(data, function(i,o) {
-    var point = o.split(/[,\ \t]+/);
-    if (point.length === 0) return;
-    if (!point[0]) return;
-    point = $.map(point, function(o,i) { return o*1; }); // cast to float
-    points.push(point);
+// export data as JSON to the textarea
+function exportData() {
+  var tables = $('.datatable');
+  var json = $.map(tables, function(o,i) {
+    // strip out [null, null] points
+    var data = $(o).data().handsontable.getData();
+    return $.map(data, function(oo,ii) {
+      if (oo[0] !== null) return [oo];
+    });
   });
-  importPoints(points);
+  $('#datatable').val(JSON.stringify(json));
+}
+
+// import data as JSON or OmniGraphSketcher format from the textarea
+function importData() {
+  var raw_data = $('#datatable').val().trim();
+  
+  try {
+    importPoints(JSON.parse(raw_data));
+    return;
+  } catch(err) {
+    
+    // sanitize data and treat as OmniGraphSketcher format
+    var points = [];
+    var data = raw_data.split('\n');
+    if (data.length === 0) return;
+    $.each(data, function(i,o) {
+      var point = o.split(/[,\ \t]+/);
+      if (point.length === 0) return;
+      if (!point[0]) return;
+      point = $.map(point, function(o,i) { return o*1; }); // cast to float
+      points.push(point);
+    });
+    importPoints(points);
+  }
 }
 
 // import data from points onto the graph
@@ -156,7 +190,7 @@ function importPoints(points) {
   var range_x = max_x - min_x;
   var range_y = max_y - min_y;
   var margin = 0.1;
-
+  
   // reset graph viewport
   initializeBoard([
     min_x - range_x * margin,
@@ -164,7 +198,7 @@ function importPoints(points) {
     max_x + range_x * margin,
     min_y - range_y * margin
   ]);
-
+  
   // split data into separate functions
   var segments = [];
   var last_x = Number.POSITIVE_INFINITY;
@@ -178,13 +212,13 @@ function importPoints(points) {
     last_x = o[0];
     segments[segments.length-1].push(o);
   });
-
+  
   // add functions
   $.each(segments, function(i,o) {
     if (o.length < 2) return;
     addFunction(o);
   });
-
+  
   // switch to functions tab
   $('#datatable').empty();
   $('.nav-tabs a[href="#functions"]').tab('show');
@@ -203,33 +237,23 @@ function initializeBoard(boundingbox) {
   board = JXG.JSXGraph.initBoard('box', board_options);
 }
 
-// update a function on the board according to the datatabe
+// draw a function according to the datatable
 function updateFunction(elem, point_data) {
-  board.suspendUpdate();
   var data_table = elem.data().handsontable;
-  console.log('redrawing function');
-
-  // redraw the function
-  if (!data_table.listening) return;
-  $.each(data_table.drawnElements, function(i,o) {
-    if (!state.copy_mode) o.remove(); // either edit or clone the function
-  });
-  var points = redrawFunctionPoints(point_data, data_table);
-  var func = redrawFunctionGraph(points);
-  data_table.drawnElements = points.concat(func);
-  
-  board.unsuspendUpdate();
+  if (data_table.listening) {
+    data.table_drawnFunction = drawFunctionGraph(data_table.drawnPoints, data_table);
+  }
 }
 
 // add a function to the datatable and board
 function addFunction(point_data) {
   board.suspendUpdate();
-
+  
   // create datatable
   var elem = $('<div class="datatable"></div>')
     .appendTo('#datatables');
   elem.handsontable({
-    startRows: 20,
+    startRows: 3,
     startCols: 2,
     rowHeaders: false,
     colHeaders: ['X', 'F(X)'],
@@ -238,55 +262,91 @@ function addFunction(point_data) {
     onChange: function(data) { updateFunction(elem, point_data); },
     onBeforeChange: function (data) { /* TODO: reject invalid values; see Handsontable demo */ }
   });
-
+  
   // draw the function
   var data_table = elem.data().handsontable;
-  var points = redrawFunctionPoints(point_data, data_table);
-  var func = redrawFunctionGraph(points);
-  data_table.drawnElements = points.concat(func);
-
+  data_table.drawnPoints = drawFunctionPoints(point_data, data_table);
+  data_table.drawnFunction = drawFunctionGraph(data_table.drawnPoints, data_table);
+  
   $.each(point_data, function(i,o) {
     data_table.setDataAtCell(i, 0, o[0]);
     data_table.setDataAtCell(i, 1, o[1]);
   });
-
+  
   data_table.listening = true;
   board.unsuspendUpdate();
+  return data_table;
 }
 
 // (re)draw a function's points
-function redrawFunctionPoints(point_data, data_table) {
-
+function drawFunctionPoints(point_data, data_table) {
+  
   var x_min = point_data[0][0];
   var x_max = point_data[point_data.length-1][0];
-
-  // draw points
+  
   var points = $.map(point_data, function(o,i) {
+    
+    // draw points
     var p = board.create('point', o, point_options);
+    
+    // mousemove highlight of data table
+    // TODO: get a better effect
+    JXG.addEvent(p.rendNode, 'mouseover', function(e) {
+      highlightFunction(data_table.rootElement.context); }, p);
+    JXG.addEvent(p.rendNode, 'mouseout', function(e) {
+      unhighlightFunction(data_table.rootElement.context); }, p);
+    
+    // handle copying of functions
+    JXG.addEvent(p.rendNode, 'mousedown', function(e) {
+      if (!state.copy_mode) return;
+      addFunction(deepcopy(point_data));
+    }, p);
+    
+    // handle editing of functions
     JXG.addEvent(p.rendNode, 'mouseup', function(e) {
       data_table.setDataAtCell(i, 0, p.coords.usrCoords[1]);
       data_table.setDataAtCell(i, 1, p.coords.usrCoords[2]);
+      if (!state.copy_mode) return;
+      point_data[i][0] = p.coords.usrCoords[1];
+      point_data[i][1] = p.coords.usrCoords[2];
     }, p);
+    
     return p;
   });
-
+  
   return points;
 }
 
 // (re)draw a function's graph
-function redrawFunctionGraph(points) {
-
+function drawFunctionGraph(points, data_table) {
+  
   var x_min = points[0].coords.usrCoords[1];
   var x_max = points[points.length-1].coords.usrCoords[1];
-
+  
   // draw function graph
   var func = board.create('functiongraph', [
     state.functionmodel(points), x_min, x_max], function_options);
+  
+  // handle mouseover on function
+  JXG.addEvent(func.rendNode, 'mouseover', function(e) {
+    highlightFunction(data_table.rootElement.context); }, func);
+  JXG.addEvent(func.rendNode, 'mouseout', function(e) {
+    unhighlightFunction(data_table.rootElement.context); }, func);
+  
+  // TODO: handle click/drag on function
   JXG.addEvent(func.rendNode, 'click', function(e) {
     // TODO: do stuff to the function when it is clicked on, dragged, etc.
   }, func);
-
+  
   return func;
+}
+
+function highlightFunction(el) {
+  $(el).css('opacity', 0.5);
+}
+
+function unhighlightFunction(el) {
+  $(el).css('opacity', 1.0);
 }
 
 /* ****************************************************************************************************
@@ -304,7 +364,7 @@ function getMouseCoords(e) {
   absPos = JXG.getPosition(e),
   dx = absPos[0]-cPos[0],
   dy = absPos[1]-cPos[1];
-
+  
   return new JXG.Coords(JXG.COORDS_BY_SCREEN, [dx, dy], board);
 }
 
@@ -316,6 +376,12 @@ function isInGraph(node) {
     n = n.parentElement;
   }
   return false;
+}
+
+// full depth copy for arrays of arrays
+function deepcopy(arr) {
+  console.log(arr)
+  return $.extend(true, [], arr);
 }
 
 /* **************************************************************************************************** */
