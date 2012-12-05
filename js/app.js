@@ -306,7 +306,6 @@ function drawFunctionPoints(point_data, data_table) {
     JXG.addEvent(p.rendNode, 'mouseup', function(e) {
       data_table.setDataAtCell(i, 0, p.coords.usrCoords[1]);
       data_table.setDataAtCell(i, 1, p.coords.usrCoords[2]);
-      if (!state.copy_mode) return;
       point_data[i][0] = p.coords.usrCoords[1];
       point_data[i][1] = p.coords.usrCoords[2];
     }, p);
