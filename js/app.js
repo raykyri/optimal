@@ -1,13 +1,14 @@
-/* ****************************************************************************************************
+/* **********************************************************************
    Globals
 */
 
-var board;
 var state = {
+  tooltip: null,
   copy_mode: true,
   functionmodel: JXG.Math.Numerics.lagrangePolynomial
 };
 
+var board;
 var board_options = {
   showCopyright: false,
   keepaspectratio: true,
@@ -57,12 +58,20 @@ function initialize() {
   $('#yaxis-log').click(function() {
     // TODO
   });
-  $('#func-copy').click(function() { state.copy_mode = true; });
-  $('#func-edit').click(function() { state.copy_mode = false; });
-  //$('#box').aToolTip();
+  $('#box').aToolTip({
+    inSpeed: 0,
+    outSpeed: 0,
+    tipContent: function() { return getTooltip(); }
+  });
+  $('#func-copy').click(function() {
+    state.copy_mode = true;
+  });
+  $('#func-edit').click(function() {
+    state.copy_mode = false;
+  });
 }
 
-/* ****************************************************************************************************
+/* **********************************************************************
    Presets tab
 */
 
@@ -121,7 +130,7 @@ function switchModel(model) {
   }
 }
 
-/* ****************************************************************************************************
+/* **********************************************************************
    Function Editor tab
 */
 
@@ -135,7 +144,7 @@ function dataTables() {
 function initializeTable() {
 }
 
-/* ****************************************************************************************************
+/* **********************************************************************
    Import Data tab
 */
 
@@ -155,12 +164,12 @@ function exportData() {
 // import data as JSON or OmniGraphSketcher format from the textarea
 function importData() {
   var raw_data = $('#datatable').val().trim();
-  
+
   try {
     importPoints(JSON.parse(raw_data));
     return;
   } catch(err) {
-    
+
     // sanitize data and treat as OmniGraphSketcher format
     var points = [];
     var data = raw_data.split('\n');
@@ -190,7 +199,7 @@ function importPoints(points) {
   var range_x = max_x - min_x;
   var range_y = max_y - min_y;
   var margin = 0.1;
-  
+
   // reset graph viewport
   initializeBoard([
     min_x - range_x * margin,
@@ -198,7 +207,7 @@ function importPoints(points) {
     max_x + range_x * margin,
     min_y - range_y * margin
   ]);
-  
+
   // split data into separate functions
   var segments = [];
   var last_x = Number.POSITIVE_INFINITY;
@@ -212,19 +221,19 @@ function importPoints(points) {
     last_x = o[0];
     segments[segments.length-1].push(o);
   });
-  
+
   // add functions
   $.each(segments, function(i,o) {
     if (o.length < 2) return;
     addFunction(o);
   });
-  
+
   // switch to functions tab
   $('#datatable').empty();
   $('.nav-tabs a[href="#functions"]').tab('show');
 }
 
-/* ****************************************************************************************************
+/* **********************************************************************
    JSXGraph Board functions
 */
 
@@ -248,7 +257,7 @@ function updateFunction(elem, point_data) {
 // add a function to the datatable and board
 function addFunction(point_data) {
   board.suspendUpdate();
-  
+
   // create datatable
   var elem = $('<div class="datatable"></div>')
     .appendTo('#datatables');
@@ -262,17 +271,17 @@ function addFunction(point_data) {
     onChange: function(data) { updateFunction(elem, point_data); },
     onBeforeChange: function (data) { /* TODO: reject invalid values; see Handsontable demo */ }
   });
-  
+
   // draw the function
   var data_table = elem.data().handsontable;
   data_table.drawnPoints = drawFunctionPoints(point_data, data_table);
   data_table.drawnFunction = drawFunctionGraph(data_table.drawnPoints, data_table);
-  
+
   $.each(point_data, function(i,o) {
     data_table.setDataAtCell(i, 0, o[0]);
     data_table.setDataAtCell(i, 1, o[1]);
   });
-  
+
   data_table.listening = true;
   board.unsuspendUpdate();
   return data_table;
@@ -280,28 +289,36 @@ function addFunction(point_data) {
 
 // (re)draw a function's points
 function drawFunctionPoints(point_data, data_table) {
-  
+
   var x_min = point_data[0][0];
   var x_max = point_data[point_data.length-1][0];
-  
+
   var points = $.map(point_data, function(o,i) {
-    
+
     // draw points
     var p = board.create('point', o, point_options);
-    
+
     // mousemove highlight of data table
     // TODO: get a better effect
     JXG.addEvent(p.rendNode, 'mouseover', function(e) {
-      highlightFunction(data_table.rootElement.context); }, p);
+      highlightFunction(data_table.rootElement.context);
+      if (state.copy_mode === true) {
+        setTooltip('Drag to edit and copy function');
+      } else {
+        setTooltip('Drag to edit');
+      }
+    }, p);
     JXG.addEvent(p.rendNode, 'mouseout', function(e) {
-      unhighlightFunction(data_table.rootElement.context); }, p);
-    
+      unhighlightFunction(data_table.rootElement.context);
+      setTooltip();
+    }, p);
+
     // handle copying of functions
     JXG.addEvent(p.rendNode, 'mousedown', function(e) {
       if (!state.copy_mode) return;
       addFunction(deepcopy(point_data));
     }, p);
-    
+
     // handle editing of functions
     JXG.addEvent(p.rendNode, 'mouseup', function(e) {
       data_table.setDataAtCell(i, 0, p.coords.usrCoords[1]);
@@ -309,34 +326,42 @@ function drawFunctionPoints(point_data, data_table) {
       point_data[i][0] = p.coords.usrCoords[1];
       point_data[i][1] = p.coords.usrCoords[2];
     }, p);
-    
+
     return p;
   });
-  
+
   return points;
 }
 
 // (re)draw a function's graph
 function drawFunctionGraph(points, data_table) {
-  
+
   var x_min = points[0].coords.usrCoords[1];
   var x_max = points[points.length-1].coords.usrCoords[1];
-  
+
   // draw function graph
   var func = board.create('functiongraph', [
     state.functionmodel(points), x_min, x_max], function_options);
-  
+
   // handle mouseover on function
   JXG.addEvent(func.rendNode, 'mouseover', function(e) {
-    highlightFunction(data_table.rootElement.context); }, func);
+    highlightFunction(data_table.rootElement.context);
+    if (state.copy_mode === true) {
+      setTooltip('Drag to translate and copy function');
+    } else {
+      setTooltip('Drag to translate function');
+    }
+  }, func);
   JXG.addEvent(func.rendNode, 'mouseout', function(e) {
-    unhighlightFunction(data_table.rootElement.context); }, func);
-  
+    unhighlightFunction(data_table.rootElement.context);
+    setTooltip();
+  }, func);
+
   // TODO: handle click/drag on function
   JXG.addEvent(func.rendNode, 'click', function(e) {
     // TODO: do stuff to the function when it is clicked on, dragged, etc.
   }, func);
-  
+
   return func;
 }
 
@@ -348,13 +373,25 @@ function unhighlightFunction(el) {
   $(el).css('opacity', 1.0);
 }
 
-/* ****************************************************************************************************
+/* **********************************************************************
    Helper functions
 */
 
 // set a tooltip when hovering over the graph
-function setTooltip(tooltip) {
-  $('#box').attr('title', tooltip);
+function setTooltip(text) {
+  if (text !== undefined) {
+    $('#aToolTip').show();
+    $('.aToolTipContent').text(text);
+    state.tooltip = text;
+  } else {
+    // hide tooltip
+    $('#aToolTip').hide();
+    state.tooltip = null;
+  }
+}
+
+function getTooltip() {
+  return state.tooltip;
 }
 
 // get graph coordinates from a click on the graph
@@ -363,7 +400,7 @@ function getMouseCoords(e) {
   absPos = JXG.getPosition(e),
   dx = absPos[0]-cPos[0],
   dy = absPos[1]-cPos[1];
-  
+
   return new JXG.Coords(JXG.COORDS_BY_SCREEN, [dx, dy], board);
 }
 
@@ -383,6 +420,8 @@ function deepcopy(arr) {
   return $.extend(true, [], arr);
 }
 
-/* **************************************************************************************************** */
+/* **********************************************************************
+ Initialization
+*/
 
 $(document).ready(initialize);
