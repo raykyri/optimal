@@ -1,4 +1,19 @@
 /* **********************************************************************
+   Debug
+*/
+
+function debugdot(top, left) {
+  $('<div/>').css({
+    position: 'absolute',
+    border: '1px solid black',
+    width: '1px',
+    height: '1px',
+    top: top + 'px',
+    left: left + 'px'
+  }).appendTo($('body'));
+}
+
+/* **********************************************************************
    Globals
 */
 
@@ -10,11 +25,14 @@ var optimalApp = {
   tooltip: null,
   copyMode: true,
   functionmodel: JXG.Math.Numerics.lagrangePolynomial,
-  selectedFunction: { graph: null, sidebar: null },
+
+  // for selection
+  selectedFunction: null,
   selectedBBox: null,
 
   // for bounding box for selected functions
   selection: null,
+  selectionBasePosition: [0, 0],
   selectionPosition: [0, 0],
   selectionOffset: [0, 0],
   selectionOrigin: [0, 0],
@@ -281,6 +299,7 @@ function addFunction(point_data) {
   var func = {
     data: point_data,
     dataTable: elem.data().handsontable,
+    drawnSidebar: elem,
     drawnGraph: null,
     drawnPoints: null,
   };  
@@ -307,8 +326,10 @@ function drawFunctionPoints(func) {
     withLabel: false
   };
   
-  var x_min = func.data[0][0];
-  var x_max = func.data[func.data.length-1][0];
+  var xvals = $.map(func.data, function(o,i) { return o[0]; });
+  var yvals = $.map(func.data, function(o,i) { return o[1]; });
+  var x_min = Math.min.apply(this, xvals);
+  var x_max = Math.max.apply(this, xvals);
   
   // create and bind event handler for each point
   var points = $.map(func.data, function(o,i) {
@@ -317,7 +338,7 @@ function drawFunctionPoints(func) {
     
     // mousemove highlight of data table
     JXG.addEvent(p.rendNode, 'click', function(e) {
-      //selectFunction(p.rendNode, func.dataTable.rootElement.context);
+      //selectFunction(func);
     }, p);
 
     JXG.addEvent(p.rendNode, 'mouseover', function(e) {
@@ -329,7 +350,7 @@ function drawFunctionPoints(func) {
     }, p);
 
     JXG.addEvent(p.rendNode, 'mouseout', function(e) { // TODO: a proper interaction for canceling the selection
-      //unselectFunction(p.rendNode, func.dataTable.rootElement.context);
+      //unselectFunction(func);
       setTooltip();
     }, p);
     
@@ -364,8 +385,8 @@ function drawFunctionGraph(func) {
 
   var xvals = $.map(func.data, function(o,i) { return o[0]; });
   var yvals = $.map(func.data, function(o,i) { return o[1]; });
-  var x_min = func.drawnPoints[0].coords.usrCoords[1];
-  var x_max = func.drawnPoints[func.drawnPoints.length-1].coords.usrCoords[1];
+  var x_min = Math.min.apply(this, xvals);
+  var x_max = Math.max.apply(this, xvals);
   
   // draw function graph
   var functionGraph = optimalApp.board.create('functiongraph', [
@@ -373,7 +394,7 @@ function drawFunctionGraph(func) {
   
   // handle mouseover on function
   JXG.addEvent(functionGraph.rendNode, 'click', function(e) {
-    selectFunction(functionGraph.rendNode, func.dataTable.rootElement.context);
+    selectFunction(func);
   }, functionGraph);
 
   JXG.addEvent(functionGraph.rendNode, 'mouseover', function(e) {
@@ -385,7 +406,7 @@ function drawFunctionGraph(func) {
   }, functionGraph);
 
   JXG.addEvent(functionGraph.rendNode, 'mouseout', function(e) { // TODO: a proper interaction for canceling the selection
-    //unselectFunction(functionGraph.rendNode, func.dataTable.rootElement.context);
+    //unselectFunction(func);
     setTooltip();
   }, functionGraph);
   
@@ -401,11 +422,9 @@ function drawFunctionGraph(func) {
    Selection box for functions
 */
 
-function selectFunction(graph_element, sidebar_element) {
-  optimalApp.selectedFunction.sidebar = sidebar_element;
-  optimalApp.selectedFunction.graph = graph_element;
+function selectFunction(func) {
 
-  $(optimalApp.selectedFunction.sidebar).css('opacity', 0.5);
+  $(func.dataTable.rootElement.context).css('opacity', 0.5);
   
   // TODO component: rotate
   // TODO interaction: rotate
@@ -414,29 +433,60 @@ function selectFunction(graph_element, sidebar_element) {
   // TODO: redraw bbox upon zoom/pan
   // DEBUG: sometimes one edge of the marquee disappears, why?
 
-  optimalApp.selectedBBox = initGrabBox(optimalApp.selectedFunction.graph);
+  optimalApp.selectedFunction = func;
+  optimalApp.selectedBBox = initGrabBox(func.drawnGraph.rendNode);
   optimalApp.selectedBBox.trigger.mousedown(mousedownMoveHandler);
   for (var i in optimalApp.selectedBBox.handler) {
     $(optimalApp.selectedBBox.handler[i]).mousedown(mousedownResizeHandler);
   }
 }
 
-function scaleFunction(xscale, yscale, xpivot_px, ypivot_px) {
+function scaleFunction(xscale, yscale, xpivot0_px, ypivot0_px, xpivot_px, ypivot_px) {
   if (xscale === 1 && yscale === 1) return;
+  
+  var xpivot0 = (xpivot0_px - optimalApp.board.cPos[0] - 
+                 optimalApp.board.origin.scrCoords[1]) / optimalApp.board.unitX;
+  var ypivot0 = -(ypivot0_px - optimalApp.board.cPos[1] - 
+                  optimalApp.board.origin.scrCoords[2]) / optimalApp.board.unitY;
+  var xpivot = (xpivot_px - optimalApp.board.cPos[0] - 
+                optimalApp.board.origin.scrCoords[1]) / optimalApp.board.unitX;
+  var ypivot = -(ypivot_px - optimalApp.board.cPos[1] - 
+                 optimalApp.board.origin.scrCoords[2]) / optimalApp.board.unitY;
 
-  var xpivot = (xpivot_px - optimalApp.board.origin.scrCoords[1]) / optimalApp.board.unitX;
-  var ypivot = (ypivot_px - optimalApp.board.origin.scrCoords[2]) / optimalApp.board.unitY;
-  console.log('Scaling ' + xscale +'x/' + yscale + 'x about (' + xpivot + ', ' + ypivot + ')');
+  console.log(
+    'Scaling ' + xscale +'x/' + yscale + 'x from ' + 
+      '(' + xpivot0 + ', ' + ypivot0 + ') to ' +
+      '(' + xpivot + ', ' + ypivot + ')');
 
-  // $('.datatable').data().handsontable.drawnPoints[2].setPositionY(JXG.COORDS_BY_SCREEN 3) sth like this
+  // update data and points
+  $.each(optimalApp.selectedFunction.data, function(i,o) {
+
+    o[0] = xpivot + (o[0] - xpivot0) * xscale;
+    o[1] = ypivot + (o[1] - ypivot0) * yscale;
+    optimalApp.selectedFunction.drawnPoints[i].moveTo(o);
+  });
+
+  // update function graph
+  optimalApp.selectedFunction.drawnGraph.remove();
+  optimalApp.selectedFunction.drawnGraph = drawFunctionGraph(optimalApp.selectedFunction);
 }
 
 function translateFunction(dx_px, dy_px) {
 
   var dx = dx_px / optimalApp.board.unitX;
-  var dy = dy_px / optimalApp.board.unitY;
+  var dy = -dy_px / optimalApp.board.unitY;
   console.log('Translating by (' + dx + ', ' + dy + ')');
 
+  // update data and points
+  $.each(optimalApp.selectedFunction.data, function(i,o) {
+    o[0] += dx;
+    o[1] += dy;
+    optimalApp.selectedFunction.drawnPoints[i].moveTo(o);
+  });
+
+  // update function graph
+  optimalApp.selectedFunction.drawnGraph.remove();
+  optimalApp.selectedFunction.drawnGraph = drawFunctionGraph(optimalApp.selectedFunction);
 }
 
 function rotateFunction(theta, xpivot_px, ypivot_px) {
@@ -447,8 +497,8 @@ function rotateFunction(theta, xpivot_px, ypivot_px) {
 
 }
 
-function unselectFunction() {
-  $(optimalApp.selectedFunction.sidebar).css('opacity', 1.0);
+function unselectFunction(func) {
+  $(func.drawnSidebar).css('opacity', 1.0);
 
   optimalApp.selectedBBox.trigger.unbind('mousedown');
   for (var i in optimalApp.selectedBBox.handler) {
@@ -631,10 +681,15 @@ function moveSelection(event) {
 
 function releaseResizeSelection(event) {
   console.log('Calling releaseResizeSelection');
+
+  resizeSelection(event);
   releaseSelection(event);
+
   scaleFunction(
     optimalApp.selectionWidth / optimalApp.selectionBaseWidth,
     optimalApp.selectionHeight / optimalApp.selectionBaseHeight,
+    optimalApp.selectionBasePosition[0] + optimalApp.selectionBaseWidth/2,
+    optimalApp.selectionBasePosition[1] + optimalApp.selectionBaseHeight/2,
     optimalApp.selectionPosition[0] + optimalApp.selectionWidth/2,
     optimalApp.selectionPosition[1] + optimalApp.selectionHeight/2
   );
@@ -642,13 +697,18 @@ function releaseResizeSelection(event) {
 
 function releaseRotateSelection(event) {
   console.log('Calling releaseRotateSelection');
+
+  rotateSelection(event);
   releaseSelection(event);
   // TODO
 }
 
-function releaseMoveSelection() {
+function releaseMoveSelection(event) {
   console.log('Calling releaseMoveSelection');
+
+  moveSelection(event);
   releaseSelection(event);
+
   translateFunction(
     event.pageX - optimalApp.selectionOrigin[0],
     event.pageY - optimalApp.selectionOrigin[1]
@@ -681,6 +741,9 @@ function setSelection() {
 
   optimalApp.selectionPosition[0] = bbox.position().left;
   optimalApp.selectionPosition[1] = bbox.position().top;
+
+  optimalApp.selectionBasePosition[0] = bbox.position().left;
+  optimalApp.selectionBasePosition[1] = bbox.position().top;
 
   optimalApp.selectionOffset[0] = event.offsetX;
   optimalApp.selectionOffset[1] = event.offsetY;

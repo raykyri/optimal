@@ -100,8 +100,9 @@ img#image-crop-preview
   }
 #image-crop-n-resize-handler 
 { 
-  right: 50%;
+  left: 50%;
   top: -4px;
+  margin-left: -4px;
   }
 #image-crop-ne-resize-handler 
 { 
@@ -112,11 +113,13 @@ img#image-crop-preview
 { 
   left: -4px;
   top: 50%;
+  margin-top: -4px;
   }
 #image-crop-e-resize-handler 
 { 
   right: -4px;
   top: 50%;
+  margin-top: -4px;
   }
 #image-crop-sw-resize-handler 
 { 
@@ -127,6 +130,7 @@ img#image-crop-preview
 { 
   left: 50%;
   bottom: -4px;
+  margin-left: -4px;
   }
 #image-crop-se-resize-handler 
 { 
