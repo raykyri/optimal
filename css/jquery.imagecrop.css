@@ -27,13 +27,14 @@
   background: #fff url('outline.gif');
   overflow: hidden;
   position: absolute;
+  z-index: 9999;
   }
 
 #image-crop-outline-n
 {
   width: 100%;
   height: 1px;  
-  top: 0px;
+  top: -1px;
   }
 
 #image-crop-outline-e
