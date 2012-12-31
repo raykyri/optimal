@@ -2,7 +2,7 @@
    Debug
 */
 
-function debugdot(top, left) {
+function __dot(top, left) {
   $('<div/>').css({
     position: 'absolute',
     border: '1px solid black',
@@ -114,19 +114,19 @@ function switchModel(model) {
     };
     break;
   case 'exponential':
-    optimalApp.functionmodel = optimalApp.functionmodel; //TODO
+    optimalApp.functionmodel = optimalApp.functionmodel; //XXX
     break;
   case 'logistic':
-    optimalApp.functionmodel = optimalApp.functionmodel; //TODO
+    optimalApp.functionmodel = optimalApp.functionmodel; //XXX
     break;
   case 'logarithmic':
-    optimalApp.functionmodel = optimalApp.functionmodel; //TODO
+    optimalApp.functionmodel = optimalApp.functionmodel; //XXX
     break;
   case 'step':
-    optimalApp.functionmodel = optimalApp.functionmodel; //TODO
+    optimalApp.functionmodel = optimalApp.functionmodel; //XXX
     break;
   case 'gaussian':
-    optimalApp.functionmodel = optimalApp.functionmodel; //TODO
+    optimalApp.functionmodel = optimalApp.functionmodel; //XXX
     break;
   case 'interpolated':
     optimalApp.functionmodel = JXG.Math.Numerics.CatmullRomSpline;
@@ -276,10 +276,20 @@ function initializeBoard(boundingbox) {
 function addFunction(point_data) {
   optimalApp.board.suspendUpdate();
   
+  var func = {
+    data: point_data,
+    dataTable: null,
+    drawnSidebar: null,
+    drawnGraph: null,
+    drawnPoints: null,
+  }; 
+
   // create datatable
-  var elem = $('<div class="datatable"></div>')
+  func.drawnSidebar =
+    $('<div class="datatable"></div>')
     .appendTo('#datatables');
-  elem.handsontable({
+
+  func.drawnSidebar.handsontable({
     startRows: 3,
     startCols: 2,
     rowHeaders: false,
@@ -287,22 +297,30 @@ function addFunction(point_data) {
     minSpareRows: 1,
     fillHandle: true,
     onChange: function(data) { 
-      console.log('datatable changed');
-      //if (data_table.listening)
-      // TODO: redraw the points and the functiongraph
-      },
-    onBeforeChange: function (data) { /* TODO: reject invalid values; see Handsontable demo */ }
+      if (func.dataTable && func.dataTable.listening) {
+        console.log('Data table changed');
+
+        func.data = $.map(func.dataTable.getData(), function(o,i) {
+          if (o[0] !== null && o[1] !== null) return [o];
+        });
+
+        // redraw points
+        $.each(func.drawnPoints, function(i,o) {
+          o.remove()
+        });
+        func.drawnPoints = drawFunctionPoints(func);
+
+        // redraw graph
+        func.drawnGraph.remove();
+        func.drawnGraph = drawFunctionGraph(func);
+      }
+    },
+    onBeforeChange: function (data) { /* XXX reject invalid values as in Handsontable demo */ }
   });
 
   // draw the graphs
-  // TODO: data is duplicated between .data and .dataTable
-  var func = {
-    data: point_data,
-    dataTable: elem.data().handsontable,
-    drawnSidebar: elem,
-    drawnGraph: null,
-    drawnPoints: null,
-  };  
+  // XXX data is duplicated between .data and .dataTable
+  func.dataTable = func.drawnSidebar.data().handsontable;
   func.drawnPoints = drawFunctionPoints(func);
   func.drawnGraph = drawFunctionGraph(func);
 
@@ -349,7 +367,7 @@ function drawFunctionPoints(func) {
       }
     }, p);
 
-    JXG.addEvent(p.rendNode, 'mouseout', function(e) { // TODO: a proper interaction for canceling the selection
+    JXG.addEvent(p.rendNode, 'mouseout', function(e) { // FIXME: a proper interaction for canceling the selection
       //unselectFunction(func);
       setTooltip();
     }, p);
@@ -405,14 +423,14 @@ function drawFunctionGraph(func) {
     }
   }, functionGraph);
 
-  JXG.addEvent(functionGraph.rendNode, 'mouseout', function(e) { // TODO: a proper interaction for canceling the selection
+  JXG.addEvent(functionGraph.rendNode, 'mouseout', function(e) { // FIXME: a proper interaction for canceling the selection
     //unselectFunction(func);
     setTooltip();
   }, functionGraph);
   
-  // TODO: handle click/drag on function
+  // FIXME: handle click/drag on function
   JXG.addEvent(functionGraph.rendNode, 'click', function(e) {
-    // TODO: do stuff to the function when it is clicked on, dragged, etc.
+    // FIXME: do stuff to the function when it is clicked on, dragged, etc.
   }, functionGraph);
   
   return functionGraph;
@@ -428,10 +446,9 @@ function selectFunction(func) {
   
   // TODO component: rotate
   // TODO interaction: rotate
-  // TODO component: clear selection
-  // TODO: interaction: clear selection
-  // TODO: redraw bbox upon zoom/pan
-  // DEBUG: sometimes one edge of the marquee disappears, why?
+  // FIXME component: clear selection
+  // FIXME: interaction: clear selection
+  // FIXME: redraw bbox upon zoom/pan
 
   optimalApp.selectedFunction = func;
   optimalApp.selectedBBox = initGrabBox(func.drawnGraph.rendNode);
@@ -531,10 +548,10 @@ function initGrabBox(svg_elem) {
   // initialize a bounding box holder as a sibling to <svg>
   var $container = $('<div id="bounding-box" />').css({
     position: 'absolute',
-    top: top,
-    left: left,
-    height: height,
-    width: width,
+    top: Math.round(top),
+    left: Math.round(left),
+    height: Math.round(height),
+    width: Math.round(width),
     backgroundColor: 'rgba(0,0,0,0.05)'
   }).insertAfter($parent);
   
@@ -715,14 +732,11 @@ function releaseMoveSelection(event) {
   );
 }
 
-// Release the current selection
 function releaseSelection(event) {
   event.preventDefault();
   event.stopPropagation();
   $(document).unbind('mousemove');
   $(document).unbind('mouseup');  
-  // TODO: unset and redraw the bounding box
-  // TODO: refactor to reuse the bounding box
 };
 
 /* **********************************************************************
@@ -759,11 +773,11 @@ function updateSelection() {
 
   var bbox = $('#bounding-box')
     .css({ 
-      left: optimalApp.selectionPosition[0],
-      top: optimalApp.selectionPosition[1]
+      left: Math.round(optimalApp.selectionPosition[0]),
+      top: Math.round(optimalApp.selectionPosition[1])
     })
-    .width(Math.max(optimalApp.selectionWidth, 0))
-    .height(Math.max(optimalApp.selectionHeight, 0));
+    .width(Math.round(Math.max(optimalApp.selectionWidth, 0)))
+    .height(Math.round(Math.max(optimalApp.selectionHeight, 0)));
 };
 
 // set a tooltip when hovering over the graph
