@@ -1,41 +1,26 @@
 /* **********************************************************************
-   Debug
-*/
-
-function __dot(top, left) {
-  $('<div/>').css({
-    position: 'absolute',
-    border: '1px solid black',
-    width: '1px',
-    height: '1px',
-    top: top + 'px',
-    left: left + 'px'
-  }).appendTo($('body'));
-}
-
-/* **********************************************************************
    Globals
 */
 
 var optimalApp = {
-
+  
   // app globals
   functions: [],
   board: null,
   tooltip: null,
   copyMode: true,
   functionmodel: JXG.Math.Numerics.lagrangePolynomial,
-
+  
   // for selection
   selectedFunction: null,
   selectedBBox: null,
-
+  
   // for bounding box for selected functions
-  selection: null,
   selectionBasePosition: [0, 0],
   selectionPosition: [0, 0],
   selectionOffset: [0, 0],
   selectionOrigin: [0, 0],
+  selectionRotation: 0,
   selectionWidth: 0,
   selectionHeight: 0,
   selectionBaseWidth: 0,
@@ -114,19 +99,19 @@ function switchModel(model) {
     };
     break;
   case 'exponential':
-    optimalApp.functionmodel = optimalApp.functionmodel; //XXX
+    optimalApp.functionmodel = optimalApp.functionmodel; //TODO
     break;
   case 'logistic':
-    optimalApp.functionmodel = optimalApp.functionmodel; //XXX
+    optimalApp.functionmodel = optimalApp.functionmodel; //TODO
     break;
   case 'logarithmic':
-    optimalApp.functionmodel = optimalApp.functionmodel; //XXX
+    optimalApp.functionmodel = optimalApp.functionmodel; //TODO
     break;
   case 'step':
-    optimalApp.functionmodel = optimalApp.functionmodel; //XXX
+    optimalApp.functionmodel = optimalApp.functionmodel; //TODO
     break;
   case 'gaussian':
-    optimalApp.functionmodel = optimalApp.functionmodel; //XXX
+    optimalApp.functionmodel = optimalApp.functionmodel; //TODO
     break;
   case 'interpolated':
     optimalApp.functionmodel = JXG.Math.Numerics.CatmullRomSpline;
@@ -248,7 +233,7 @@ function importPoints(points) {
 
 // remove all functions from board
 function initializeBoard(boundingbox) {
-
+  
   var board_options = {
     showCopyright: false,
     keepaspectratio: true,
@@ -261,21 +246,23 @@ function initializeBoard(boundingbox) {
     unitY: 25,
     boundingbox: [-10, 10, 10, -10] // [-x, y, x, -y]
   };
-
+  
   if (optimalApp.board !== null) {
     JXG.JSXGraph.freeBoard(optimalApp.board);
   }
   if (boundingbox !== undefined) {
     board_options.boundingbox = boundingbox;
   }
-
+  
   optimalApp.board = JXG.JSXGraph.initBoard('box', board_options);
+
+  optimalApp.board.addHook(redrawSelectionBox, 'update');
 }
 
 // add a function to the datatable and board
-function addFunction(point_data) {
+function addFunction(point_data) { 
   optimalApp.board.suspendUpdate();
-  
+ 
   var func = {
     data: point_data,
     dataTable: null,
@@ -283,12 +270,12 @@ function addFunction(point_data) {
     drawnGraph: null,
     drawnPoints: null,
   }; 
-
+  
   // create datatable
   func.drawnSidebar =
     $('<div class="datatable"></div>')
     .appendTo('#datatables');
-
+  
   func.drawnSidebar.handsontable({
     startRows: 3,
     startCols: 2,
@@ -299,38 +286,38 @@ function addFunction(point_data) {
     onChange: function(data) { 
       if (func.dataTable && func.dataTable.listening) {
         console.log('Data table changed');
-
+        
         func.data = $.map(func.dataTable.getData(), function(o,i) {
           if (o[0] !== null && o[1] !== null) return [o];
         });
-
+        
         // redraw points
         $.each(func.drawnPoints, function(i,o) {
-          o.remove()
+          o.remove();
         });
         func.drawnPoints = drawFunctionPoints(func);
-
+        
         // redraw graph
         func.drawnGraph.remove();
         func.drawnGraph = drawFunctionGraph(func);
       }
     },
-    onBeforeChange: function (data) { /* XXX reject invalid values as in Handsontable demo */ }
+    onBeforeChange: function (data) { /* TODO reject invalid values as in Handsontable demo */ }
   });
-
+  
   // draw the graphs
-  // XXX data is duplicated between .data and .dataTable
+  // TODO data is duplicated between .data and .dataTable
   func.dataTable = func.drawnSidebar.data().handsontable;
   func.drawnPoints = drawFunctionPoints(func);
   func.drawnGraph = drawFunctionGraph(func);
-
+  
   // set values in the data table
   $.each(point_data, function(i,o) {
     func.dataTable.setDataAtCell(i, 0, o[0]);
     func.dataTable.setDataAtCell(i, 1, o[1]);
   });
   func.dataTable.listening = true;
-
+  
   optimalApp.functions.push(func);
   optimalApp.board.unsuspendUpdate();
   return func;
@@ -338,7 +325,7 @@ function addFunction(point_data) {
 
 // (re)draw a function's points
 function drawFunctionPoints(func) {
-
+  
   var point_options = {
     style: 6,
     withLabel: false
@@ -358,7 +345,7 @@ function drawFunctionPoints(func) {
     JXG.addEvent(p.rendNode, 'click', function(e) {
       //selectFunction(func);
     }, p);
-
+    
     JXG.addEvent(p.rendNode, 'mouseover', function(e) {
       if (optimalApp.copyMode === true) {
         setTooltip('Drag to copy and edit function');
@@ -366,9 +353,8 @@ function drawFunctionPoints(func) {
         setTooltip('Drag to edit');
       }
     }, p);
-
-    JXG.addEvent(p.rendNode, 'mouseout', function(e) { // FIXME: a proper interaction for canceling the selection
-      //unselectFunction(func);
+    
+    JXG.addEvent(p.rendNode, 'mouseout', function(e) {
       setTooltip();
     }, p);
     
@@ -400,7 +386,7 @@ function drawFunctionGraph(func) {
     highlightstrokeWidth: 3,
     withLabel: false
   };
-
+  
   var xvals = $.map(func.data, function(o,i) { return o[0]; });
   var yvals = $.map(func.data, function(o,i) { return o[1]; });
   var x_min = Math.min.apply(this, xvals);
@@ -414,7 +400,7 @@ function drawFunctionGraph(func) {
   JXG.addEvent(functionGraph.rendNode, 'click', function(e) {
     selectFunction(func);
   }, functionGraph);
-
+  
   JXG.addEvent(functionGraph.rendNode, 'mouseover', function(e) {
     if (optimalApp.copyMode === true) {
       setTooltip('Click to copy and transform function');
@@ -422,15 +408,13 @@ function drawFunctionGraph(func) {
       setTooltip('Click to transform function');
     }
   }, functionGraph);
-
-  JXG.addEvent(functionGraph.rendNode, 'mouseout', function(e) { // FIXME: a proper interaction for canceling the selection
-    //unselectFunction(func);
+  
+  JXG.addEvent(functionGraph.rendNode, 'mouseout', function(e) {
     setTooltip();
   }, functionGraph);
   
-  // FIXME: handle click/drag on function
   JXG.addEvent(functionGraph.rendNode, 'click', function(e) {
-    // FIXME: do stuff to the function when it is clicked on, dragged, etc.
+    // TODO additional interactions when a function graph is clicked on, etc.
   }, functionGraph);
   
   return functionGraph;
@@ -440,25 +424,45 @@ function drawFunctionGraph(func) {
    Selection box for functions
 */
 
-function selectFunction(func) {
+function locateSelectionBox() {
+  return {
+    height: optimalApp.selectedFunction.drawnGraph.rendNode.getBBox().height,
+    width: optimalApp.selectedFunction.drawnGraph.rendNode.getBBox().width,
+    top: Math.round(optimalApp.selectedFunction.drawnGraph.rendNode.getBoundingClientRect().top),
+    left: Math.round(optimalApp.selectedFunction.drawnGraph.rendNode.getBoundingClientRect().left)
+  };
+}
 
+function selectFunction(func) {
+  
   $(func.dataTable.rootElement.context).css('opacity', 0.5);
   
   // TODO component: rotate
   // TODO interaction: rotate
-  // FIXME component: clear selection
-  // FIXME: interaction: clear selection
-  // FIXME: redraw bbox upon zoom/pan
-
+  
   optimalApp.selectedFunction = func;
-  optimalApp.selectedBBox = initGrabBox(func.drawnGraph.rendNode);
+  optimalApp.selectedBBox = initSelectionBox(func.drawnGraph);
   optimalApp.selectedBBox.trigger.mousedown(mousedownMoveHandler);
-  for (var i in optimalApp.selectedBBox.handler) {
-    $(optimalApp.selectedBBox.handler[i]).mousedown(mousedownResizeHandler);
+  optimalApp.selectedBBox.rotator.mousedown(mousedownRotateHandler);
+  for (var i in optimalApp.selectedBBox.handle) {
+    $(optimalApp.selectedBBox.handle[i]).mousedown(mousedownResizeHandler);
   }
 }
 
+function unselectFunction() {
+  $(optimalApp.selectedFunction.drawnSidebar).css('opacity', 1.0);
+
+  for (var i in optimalApp.selectedBBox.handle) {
+    $(optimalApp.selectedBBox.handle[i]).unbind();
+  }
+  optimalApp.selectedBBox.trigger.unbind();
+  optimalApp.selectedBBox.container.detach();
+  optimalApp.selectedFunction = null;
+  optimalApp.selectedBBox = null;
+}
+
 function scaleFunction(xscale, yscale, xpivot0_px, ypivot0_px, xpivot_px, ypivot_px) {
+  optimalApp.board.suspendUpdate();
   if (xscale === 1 && yscale === 1) return;
   
   var xpivot0 = (xpivot0_px - optimalApp.board.cPos[0] - 
@@ -469,81 +473,82 @@ function scaleFunction(xscale, yscale, xpivot0_px, ypivot0_px, xpivot_px, ypivot
                 optimalApp.board.origin.scrCoords[1]) / optimalApp.board.unitX;
   var ypivot = -(ypivot_px - optimalApp.board.cPos[1] - 
                  optimalApp.board.origin.scrCoords[2]) / optimalApp.board.unitY;
-
+  
   console.log(
     'Scaling ' + xscale +'x/' + yscale + 'x from ' + 
       '(' + xpivot0 + ', ' + ypivot0 + ') to ' +
       '(' + xpivot + ', ' + ypivot + ')');
-
+  
   // update data and points
   $.each(optimalApp.selectedFunction.data, function(i,o) {
-
+    
     o[0] = xpivot + (o[0] - xpivot0) * xscale;
     o[1] = ypivot + (o[1] - ypivot0) * yscale;
     optimalApp.selectedFunction.drawnPoints[i].moveTo(o);
   });
-
+  
   // update function graph
   optimalApp.selectedFunction.drawnGraph.remove();
   optimalApp.selectedFunction.drawnGraph = drawFunctionGraph(optimalApp.selectedFunction);
+  optimalApp.board.unsuspendUpdate();
 }
 
 function translateFunction(dx_px, dy_px) {
-
+  optimalApp.board.suspendUpdate();
+  
   var dx = dx_px / optimalApp.board.unitX;
   var dy = -dy_px / optimalApp.board.unitY;
   console.log('Translating by (' + dx + ', ' + dy + ')');
-
+  
   // update data and points
   $.each(optimalApp.selectedFunction.data, function(i,o) {
     o[0] += dx;
     o[1] += dy;
     optimalApp.selectedFunction.drawnPoints[i].moveTo(o);
   });
-
+  
   // update function graph
   optimalApp.selectedFunction.drawnGraph.remove();
   optimalApp.selectedFunction.drawnGraph = drawFunctionGraph(optimalApp.selectedFunction);
+  optimalApp.board.unsuspendUpdate();
 }
 
 function rotateFunction(theta, xpivot_px, ypivot_px) {
+  optimalApp.board.suspendUpdate();
+  
+  var xpivot = (xpivot_px - optimalApp.board.cPos[0] - 
+                 optimalApp.board.origin.scrCoords[1]) / optimalApp.board.unitX;
+  var ypivot = -(ypivot_px - optimalApp.board.cPos[1] - 
+                  optimalApp.board.origin.scrCoords[2]) / optimalApp.board.unitY;
+  console.log('Rotating by ' + theta * 180/Math.PI + 'deg ' + 
+              'about (' + xpivot + ', ' + ypivot + ')');
 
-  var xpivot = (xpivot_px - optimalApp.board.origin.scrCoords[1]) / optimalApp.board.unitX;
-  var ypivot = (ypivot_px - optimalApp.board.origin.scrCoords[2]) / optimalApp.board.unitY;
-  console.log('Rotating by ' + theta +' about (' + xpivot + ', ' + ypivot + ')');
-
-}
-
-function unselectFunction(func) {
-  $(func.drawnSidebar).css('opacity', 1.0);
-
-  optimalApp.selectedBBox.trigger.unbind('mousedown');
-  for (var i in optimalApp.selectedBBox.handler) {
-    $(optimalApp.selectedBBox.handler[i]).unbind('mousedown');
-  }
-}
-
-function getBBoxDimensions() {
-  return {
-    height: optimalApp.selection.getBBox().height,
-    width: optimalApp.selection.getBBox().width,
-    top: Math.round(optimalApp.selection.getBoundingClientRect().top),
-    left: Math.round(optimalApp.selection.getBoundingClientRect().left)
-  };
+  // update data and points
+  $.each(optimalApp.selectedFunction.data, function(i,o) {
+    o[0] = (o[0]-xpivot) * Math.cos(theta) - (o[1]-ypivot) * Math.sin(theta) + xpivot;
+    o[1] = (o[0]-xpivot) * Math.sin(theta) + (o[1]-ypivot) * Math.cos(theta) + ypivot;
+    optimalApp.selectedFunction.drawnPoints[i].moveTo(o);
+  });
+  
+  // update function graph
+  optimalApp.selectedFunction.drawnGraph.remove();
+  optimalApp.selectedFunction.drawnGraph = drawFunctionGraph(optimalApp.selectedFunction);
+  optimalApp.board.unsuspendUpdate();
 }
 
 // initialize a selection box around an SVG element
-function initGrabBox(svg_elem) {
-  optimalApp.selection = svg_elem;
+function initSelectionBox(jxg_elem) {
+  console.log('Calling initSelectionBox');
+  optimalApp.selectedFunction.drawnGraph = jxg_elem;
   
   // locate and size the SVG element
-  var bbox = getBBoxDimensions();
+  var bbox = locateSelectionBox();
   var height = bbox.height;
   var width = bbox.width;
   var top = bbox.top;
   var left = bbox.left;
   
-  var $parent = $(svg_elem).parents('div').first();
+  var $parent = $(jxg_elem.rendNode).parents('div').first();
   
   // initialize a bounding box holder as a sibling to <svg>
   var $container = $('<div id="bounding-box" />').css({
@@ -553,7 +558,9 @@ function initGrabBox(svg_elem) {
     height: Math.round(height),
     width: Math.round(width),
     backgroundColor: 'rgba(0,0,0,0.05)'
-  }).insertAfter($parent);
+  }).insertAfter($parent); 
+  // FIXME use appendTo so we can set overflow: hidden on the parent element
+  // which requires us position the bounding box relative to the graph box rather than the page
   
   // initialize a layer to receive and handle events
   var $trigger = $('<div id="image-crop-trigger"/>')
@@ -565,124 +572,138 @@ function initGrabBox(svg_elem) {
   var $outlineW = $('<div id="image-crop-outline-w" />').appendTo($container);
   var $outlineS = $('<div id="image-crop-outline-s" />').appendTo($container);
   
-  // initialize a div to cover the selection
-  var $selection = $('<div id="image-crop-selection"/>')
+  // initialize handle for rotating the selection
+  var $rotator = $('<div id="image-crop-rotate-handle"/>')
     .appendTo($container);
-  
+  var $center = $('<div id="image-crop-rotate-center"/>')
+    .appendTo($container);
+
   // initialize handles on the corners/sides
-  var $nwResizeHandler = $('<div class="image-crop-resize-handler" id="image-crop-nw-resize-handler" />')
-    .css({
-      opacity: 0.5,
-      position: 'absolute'
-    }).insertAfter($selection);
-  var $nResizeHandler = $('<div class="image-crop-resize-handler" id="image-crop-n-resize-handler" />')
-    .css({
-      opacity: 0.5,
-      position: 'absolute'
-    }).insertAfter($selection);
-  var $neResizeHandler = $('<div class="image-crop-resize-handler" id="image-crop-ne-resize-handler" />')
-    .css({
-      opacity: 0.5,
-      position: 'absolute'
-    }).insertAfter($selection);
-  var $wResizeHandler = $('<div class="image-crop-resize-handler" id="image-crop-w-resize-handler" />')
-    .css({
-      opacity: 0.5,
-      position: 'absolute'
-    }).insertAfter($selection);
-  var $eResizeHandler = $('<div class="image-crop-resize-handler" id="image-crop-e-resize-handler" />')
-    .css({
-      opacity: 0.5,
-      position: 'absolute'
-    }).insertAfter($selection);
-  var $swResizeHandler = $('<div class="image-crop-resize-handler" id="image-crop-sw-resize-handler" />')
-    .css({
-      opacity: 0.5,
-      position: 'absolute'
-    }).insertAfter($selection);
-  var $sResizeHandler = $('<div class="image-crop-resize-handler" id="image-crop-s-resize-handler" />')
-    .css({
-      opacity: 0.5,
-      position: 'absolute'
-    }).insertAfter($selection);
-  var $seResizeHandler = $('<div class="image-crop-resize-handler" id="image-crop-se-resize-handler" />')
-    .css({
-      opacity: 0.5,
-      position: 'absolute'
-    }).insertAfter($selection);
-  
-  $nResizeHandler.add($sResizeHandler).css({ cursor: 'row-resize' });
-  $eResizeHandler.add($wResizeHandler).css({ cursor: 'col-resize' });
-  $seResizeHandler.css({ cursor: 'se-resize' });
-  $neResizeHandler.css({ cursor: 'ne-resize' });
-  $swResizeHandler.css({ cursor: 'sw-resize' });
-  $nwResizeHandler.css({ cursor: 'nw-resize' });
+  var $nwResizeHandle = $('<div class="image-crop-resize-handle" id="image-crop-nw-resize-handle" />')
+    .appendTo($container);
+  var $nResizeHandle = $('<div class="image-crop-resize-handle" id="image-crop-n-resize-handle" />')
+    .appendTo($container);
+  var $neResizeHandle = $('<div class="image-crop-resize-handle" id="image-crop-ne-resize-handle" />')
+    .appendTo($container);
+  var $wResizeHandle = $('<div class="image-crop-resize-handle" id="image-crop-w-resize-handle" />')
+    .appendTo($container);
+  var $eResizeHandle = $('<div class="image-crop-resize-handle" id="image-crop-e-resize-handle" />')
+    .appendTo($container);
+  var $swResizeHandle = $('<div class="image-crop-resize-handle" id="image-crop-sw-resize-handle" />')
+    .appendTo($container);
+  var $sResizeHandle = $('<div class="image-crop-resize-handle" id="image-crop-s-resize-handle" />')
+    .appendTo($container);
+  var $seResizeHandle = $('<div class="image-crop-resize-handle" id="image-crop-se-resize-handle" />')
+    .appendTo($container);
+
+  // initialize a button to clear the selection
+  var $clearbutton = $('<input id="image-crop-clear-selection" type="button" value="Clear Selection"/>')
+    .mouseup(clearSelectionBox)
+    .appendTo($container);
+
+  $nResizeHandle.add($sResizeHandle).css({ cursor: 'row-resize' });
+  $eResizeHandle.add($wResizeHandle).css({ cursor: 'col-resize' });
+  $seResizeHandle.css({ cursor: 'se-resize' });
+  $neResizeHandle.css({ cursor: 'ne-resize' });
+  $swResizeHandle.css({ cursor: 'sw-resize' });
+  $nwResizeHandle.css({ cursor: 'nw-resize' });
   $trigger.css({ cursor: 'move' });
   
   return {
     container: $container,
-    trigger: $trigger,
-    selection: $selection,
     outline: { north: $outlineN, east: $outlineE, west: $outlineW, south: $outlineS },
-    handler: { n: $nResizeHandler, e: $eResizeHandler, w: $wResizeHandler, s: $sResizeHandler, 
-               ne: $neResizeHandler, nw: $nwResizeHandler, se: $seResizeHandler, sw: $swResizeHandler }
+    trigger: $trigger,
+    rotator: $rotator,
+    center: $center,
+    handle: { 
+      n: $nResizeHandle, e: $eResizeHandle, w: $wResizeHandle, s: $sResizeHandle, 
+      ne: $neResizeHandle, nw: $nwResizeHandle, se: $seResizeHandle, sw: $swResizeHandle 
+    }
   };
+}
+
+// handler to clear selection when e.g. user clicks outside selection box
+function clearSelectionBox() {
+  console.log('clearSelectionBox called');
+  unselectFunction();
+}
+
+// handler to redraw bounding box upon zooming/scrolling
+function redrawSelectionBox() {
+  console.log('redrawSelectionBox called');
+
+  if (optimalApp.selectedFunction !== null && 
+      optimalApp.selectedBBox !== null &&
+      optimalApp.selectedBBox.container !== null) {
+    optimalApp.selectedBBox.container.detach();
+
+    optimalApp.selectedBBox = initSelectionBox(optimalApp.selectedFunction.drawnGraph);
+    optimalApp.selectedBBox.trigger.mousedown(mousedownMoveHandler);
+    optimalApp.selectedBBox.rotator.mousedown(mousedownRotateHandler);
+    for (var i in optimalApp.selectedBBox.handle) {
+      $(optimalApp.selectedBBox.handle[i]).mousedown(mousedownResizeHandler);
+    }
+  }
 }
 
 // Drag the bounding box
 function mousedownMoveHandler(event) {
-  event.preventDefault();
-  event.stopPropagation();
   setSelection();
-
+  releaseSelection(event);
   $(document).mousemove(moveSelection);
   $(document).mouseup(releaseMoveSelection);
-};
+}
 
-// Select one of the resize handlers
+// Select one of the resize handles
 function mousedownResizeHandler(event) {
-  event.preventDefault();
-  event.stopPropagation();  
   setSelection();
-
+  releaseSelection(event);
   $(document).mousemove(resizeSelection);
   $(document).mouseup(releaseResizeSelection);
-};
+}
+
+// Select the rotation handle
+function mousedownRotateHandler(event) {
+  setSelection();
+  releaseSelection(event);
+  $(document).mousemove(rotateSelection);
+  $(document).mouseup(releaseRotateSelection);
+}
 
 // Resize the current selection
 function resizeSelection(event) {
   event.preventDefault();
   event.stopPropagation();
   console.log('Calling resizeSelection');
-
+  
   var dx = event.pageX - optimalApp.selectionOrigin[0];
   var dy = event.pageY - optimalApp.selectionOrigin[1];
-
-  if (optimalApp.resizingFrom === 'image-crop-nw-resize-handler' ||
-      optimalApp.resizingFrom === 'image-crop-w-resize-handler' ||
-      optimalApp.resizingFrom === 'image-crop-sw-resize-handler') {
+  
+  if (optimalApp.resizingFrom === 'image-crop-nw-resize-handle' ||
+      optimalApp.resizingFrom === 'image-crop-w-resize-handle' ||
+      optimalApp.resizingFrom === 'image-crop-sw-resize-handle') {
     optimalApp.selectionPosition[0] = event.pageX;
     optimalApp.selectionWidth = optimalApp.selectionBaseWidth - dx;
   }
-  if (optimalApp.resizingFrom === 'image-crop-nw-resize-handler' ||
-      optimalApp.resizingFrom === 'image-crop-n-resize-handler' ||
-      optimalApp.resizingFrom === 'image-crop-ne-resize-handler') {
+  if (optimalApp.resizingFrom === 'image-crop-nw-resize-handle' ||
+      optimalApp.resizingFrom === 'image-crop-n-resize-handle' ||
+      optimalApp.resizingFrom === 'image-crop-ne-resize-handle') {
     optimalApp.selectionPosition[1] = event.pageY;
     optimalApp.selectionHeight = optimalApp.selectionBaseHeight - dy;
   }
-  if (optimalApp.resizingFrom === 'image-crop-se-resize-handler' ||
-     optimalApp.resizingFrom === 'image-crop-s-resize-handler' ||
-     optimalApp.resizingFrom === 'image-crop-sw-resize-handler') {
+  if (optimalApp.resizingFrom === 'image-crop-se-resize-handle' ||
+      optimalApp.resizingFrom === 'image-crop-s-resize-handle' ||
+      optimalApp.resizingFrom === 'image-crop-sw-resize-handle') {
     optimalApp.selectionHeight = dy + optimalApp.selectionBaseHeight;
   }
-  if (optimalApp.resizingFrom === 'image-crop-ne-resize-handler' ||
-      optimalApp.resizingFrom === 'image-crop-e-resize-handler' ||
-      optimalApp.resizingFrom === 'image-crop-se-resize-handler') {
+  if (optimalApp.resizingFrom === 'image-crop-ne-resize-handle' ||
+      optimalApp.resizingFrom === 'image-crop-e-resize-handle' ||
+      optimalApp.resizingFrom === 'image-crop-se-resize-handle') {
     optimalApp.selectionWidth = dx + optimalApp.selectionBaseWidth;
   }
-
+  
   updateSelection();
-};
+}
 
 // Move the current selection
 function moveSelection(event) {
@@ -694,14 +715,28 @@ function moveSelection(event) {
   optimalApp.selectionPosition[1] = event.pageY - optimalApp.selectionOffset[1];
   
   updateSelection();
-};
+}
+
+function rotateSelection(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  console.log('Calling rotateSelection');
+  
+  // we assume the selection starts from vertical, and redraw the selection box upon rotation
+  var cx = optimalApp.selectionBasePosition[0] + Math.round(optimalApp.selectionBaseWidth/2);
+  var cy = optimalApp.selectionBasePosition[1] + Math.round(optimalApp.selectionBaseHeight/2);
+  optimalApp.selectionRotation = 
+    90 + (180/Math.PI) * Math.atan2(event.pageY - cy, event.pageX - cx);
+
+  updateSelection();
+}
 
 function releaseResizeSelection(event) {
   console.log('Calling releaseResizeSelection');
-
+  
   resizeSelection(event);
   releaseSelection(event);
-
+  
   scaleFunction(
     optimalApp.selectionWidth / optimalApp.selectionBaseWidth,
     optimalApp.selectionHeight / optimalApp.selectionBaseHeight,
@@ -717,15 +752,20 @@ function releaseRotateSelection(event) {
 
   rotateSelection(event);
   releaseSelection(event);
-  // TODO
+
+  rotateFunction(
+    -(optimalApp.selectionRotation % 360) * Math.PI/180,
+    optimalApp.selectionBasePosition[0] + Math.round(optimalApp.selectionBaseWidth/2),
+    optimalApp.selectionBasePosition[1] + Math.round(optimalApp.selectionBaseHeight/2)
+  );
 }
 
 function releaseMoveSelection(event) {
   console.log('Calling releaseMoveSelection');
-
+  
   moveSelection(event);
   releaseSelection(event);
-
+  
   translateFunction(
     event.pageX - optimalApp.selectionOrigin[0],
     event.pageY - optimalApp.selectionOrigin[1]
@@ -746,39 +786,45 @@ function releaseSelection(event) {
 // save the initial dimensions of the bounding box when making a selection
 function setSelection() {
   var bbox = $('#bounding-box');
-
+  
   optimalApp.selectionWidth = bbox.width();
   optimalApp.selectionHeight = bbox.height();
-
+  
   optimalApp.selectionBaseWidth = bbox.width();
   optimalApp.selectionBaseHeight = bbox.height();
-
+  
   optimalApp.selectionPosition[0] = bbox.position().left;
   optimalApp.selectionPosition[1] = bbox.position().top;
-
+  
   optimalApp.selectionBasePosition[0] = bbox.position().left;
   optimalApp.selectionBasePosition[1] = bbox.position().top;
-
+  
   optimalApp.selectionOffset[0] = event.offsetX;
   optimalApp.selectionOffset[1] = event.offsetY;
-
+  
   optimalApp.selectionOrigin[0] = event.pageX;
   optimalApp.selectionOrigin[1] = event.pageY;
+
+  optimalApp.selectionRotation = 0;
+  // since the box is redrawn after being rotated, it should start vertically aligned
 
   optimalApp.resizingFrom = event.target.id;
 }
 
 // temporarily transform the selection box we can redraw the graph
 function updateSelection() {
-
   var bbox = $('#bounding-box')
     .css({ 
       left: Math.round(optimalApp.selectionPosition[0]),
       top: Math.round(optimalApp.selectionPosition[1])
     })
     .width(Math.round(Math.max(optimalApp.selectionWidth, 0)))
-    .height(Math.round(Math.max(optimalApp.selectionHeight, 0)));
-};
+    .height(Math.round(Math.max(optimalApp.selectionHeight, 0)))
+    .css('transform', 'rotate(' + optimalApp.selectionRotation + 'deg)')
+    .css('-moz-transform', 'rotate(' + optimalApp.selectionRotation + 'deg)')
+    .css('-webkit-transform', 'rotate(' + optimalApp.selectionRotation + 'deg)')
+    .css('-o-transform', 'rotate(' + optimalApp.selectionRotation + 'deg)');
+}
 
 // set a tooltip when hovering over the graph
 function setTooltip(text) {

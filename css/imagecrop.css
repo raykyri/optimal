@@ -1,3 +1,8 @@
+#bounding-box
+{ 
+  z-index: 0;
+ }
+
 #image-crop-trigger
 { 
   background-color: #000000;
@@ -24,7 +29,7 @@
 #image-crop-outline-w,
 #image-crop-outline-s
 {
-  background: #fff url('outline.gif');
+  background: #fff url('../img/outline.gif');
   overflow: hidden;
   position: absolute;
   z-index: 9999;
@@ -84,8 +89,32 @@ img#image-crop-preview
   border: none;
   }
 
-.image-crop-resize-handler 
+#image-crop-rotate-handle
+{ 
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  margin-left: -6px;
+  background-image: url('../img/rotate.png');
+  height: 12px;
+  width: 12px;
+ }
+
+#image-crop-rotate-center
+{ 
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-top: -6px;
+  margin-left: -6px;
+  background-image: url('../img/rotate.png');
+  height: 12px;
+  width: 12px;
+ }
+
+.image-crop-resize-handle 
 {
+  position: absolute;
   background-color: #fff;
   border: 1px #000 solid;
   height: 7px;
@@ -93,47 +122,56 @@ img#image-crop-preview
   width: 7px;
   }
 
-#image-crop-nw-resize-handler 
+#image-crop-nw-resize-handle 
 { 
   left: -4px;
   top: -4px;
   }
-#image-crop-n-resize-handler 
+#image-crop-n-resize-handle 
 { 
   left: 50%;
   top: -4px;
   margin-left: -4px;
   }
-#image-crop-ne-resize-handler 
+#image-crop-ne-resize-handle 
 { 
   right: -4px;
   top: -4px;
   }
-#image-crop-w-resize-handler 
+#image-crop-w-resize-handle 
 { 
   left: -4px;
   top: 50%;
   margin-top: -4px;
   }
-#image-crop-e-resize-handler 
+#image-crop-e-resize-handle 
 { 
   right: -4px;
   top: 50%;
   margin-top: -4px;
   }
-#image-crop-sw-resize-handler 
+#image-crop-sw-resize-handle 
 { 
   left: -4px;
   bottom: -4px;
   }
-#image-crop-s-resize-handler 
+#image-crop-s-resize-handle 
 { 
   left: 50%;
   bottom: -4px;
   margin-left: -4px;
   }
-#image-crop-se-resize-handler 
+#image-crop-se-resize-handle 
 { 
   right: -4px;
   bottom: -4px;
   }
+
+#image-crop-clear-selection
+{ 
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  font-size: 12px;
+  padding: 1px 4px;
+ }
