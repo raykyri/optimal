@@ -92,12 +92,14 @@ img#image-crop-preview
 #image-crop-rotate-handle
 { 
   position: absolute;
+  background-color: #fff;
   top: 20px;
   left: 50%;
-  margin-left: -6px;
-  background-image: url('../img/rotate.png');
-  height: 12px;
-  width: 12px;
+  border: 1px #000 solid;
+  border-radius: 4px;
+  margin-left: -4px;
+  height: 8px;
+  width: 8px;
  }
 
 #image-crop-rotate-center
@@ -105,11 +107,12 @@ img#image-crop-preview
   position: absolute;
   top: 50%;
   left: 50%;
-  margin-top: -6px;
-  margin-left: -6px;
-  background-image: url('../img/rotate.png');
-  height: 12px;
-  width: 12px;
+  border: 1px #000 solid;
+  border-radius: 4px;
+  margin-top: -4px;
+  margin-left: -4px;
+  height: 8px;
+  width: 8px;
  }
 
 .image-crop-resize-handle 
@@ -118,7 +121,6 @@ img#image-crop-preview
   background-color: #fff;
   border: 1px #000 solid;
   height: 7px;
-  overflow: hidden;
   width: 7px;
   }
 

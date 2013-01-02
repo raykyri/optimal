@@ -349,7 +349,10 @@ function redrawFunctions() {
   for (var i in optimalApp.functions) {
     _redrawFunction(optimalApp.functions[i]);
   }
-  redrawSelectionBox();
+
+  // recenter selected function if there is one
+  //redrawSelectionBox();
+  
 }
 
 function _redrawFunction(func) { 
