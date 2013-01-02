@@ -1,3 +1,7 @@
+// TODO - debug the logarithmic scale and pointFilter(), add a function to redraw the graph
+//      - work on a UI for setting a scale and range / bounding box, at app launch
+//      - add UI to manage each functio in the sidebar (delete/copy/etc)
+
 /* **********************************************************************
    Globals
 */
@@ -9,6 +13,8 @@ var optimalApp = {
   board: null,
   tooltip: null,
   copyMode: true,
+  logXMode: false,
+  logYMode: false,
   functionmodel: JXG.Math.Numerics.lagrangePolynomial,
   
   // for selection
@@ -37,32 +43,57 @@ function reset() {
   initializeBoard();
 }
 
+// update the graph's axes to set x/y axes to logarithmic or linear
+function updateAxes() {
+  var xlabels = $('.handsontable th.htColHeader:first-child span').text(
+    optimalApp.logXMode ? 'log(X)' : 'X'
+  );
+  var ylabels = $('.handsontable th.htColHeader span').not(xlabels).text(
+    optimalApp.logYMode ? 'log F(X)' : 'F(X)'
+  );
+  redrawFunctions();
+}
+
+// filter for point data used when rendering points onto the graph
+// accepts and returns [x, y] array used to construct a point
+function pointFilter(o) {
+  if (!optimalApp.logXMode && !optimalApp.logYMode) return o;
+  var newpoint = [
+    optimalApp.logXMode ? Math.log(o[0]) : o[0], 
+    optimalApp.logYMode ? Math.log(o[1]) : o[1]
+  ];
+  console.log(
+    'filtering point ' + JSON.stringify(o) + '=>' + JSON.stringify(newpoint)
+  );
+  return newpoint;
+}
+
+function pointInvFilter(o) {
+  if (!optimalApp.logXMode && !optimalApp.logYMode) return o;
+  var newpoint = [
+    optimalApp.logXMode ? Math.exp(Math.LN10 * o[0]) : o[0], 
+    optimalApp.logYMode ? Math.exp(Math.LN10 * o[1]) : o[1]
+  ];
+  console.log(
+    'filtering point inversely ' + JSON.stringify(o) + '=>' + JSON.stringify(newpoint)
+  );
+  return newpoint;
+}
+
 // initialize the app
 function initialize() {
   initializeBoard();
-  $('#xaxis-lin').click(function() {
-    // TODO
-  });
-  $('#xaxis-log').click(function() {
-    // TODO
-  });
-  $('#yaxis-lin').click(function() {
-    // TODO
-  });
-  $('#yaxis-log').click(function() {
-    // TODO
-  });
   $('#box').aToolTip({
     inSpeed: 0,
     outSpeed: 0,
     tipContent: function() { return getTooltip(); }
   });
-  $('#func-copy').click(function() {
-    optimalApp.copyMode = true;
-  });
-  $('#func-edit').click(function() {
-    optimalApp.copyMode = false;
-  });
+  $('#func-copy').click(function() { optimalApp.copyMode = true; });
+  $('#func-edit').click(function() { optimalApp.copyMode = false; });
+  $('#xaxis-lin').click(function() { optimalApp.logXMode = false; updateAxes(); });
+  $('#xaxis-log').click(function() { optimalApp.logXMode = true; updateAxes(); });
+  $('#yaxis-lin').click(function() { optimalApp.logYMode = false; updateAxes(); });
+  $('#yaxis-log').click(function() { optimalApp.logYMode = true; updateAxes(); });
 }
 
 /* **********************************************************************
@@ -268,7 +299,7 @@ function addFunction(point_data) {
     dataTable: null,
     drawnSidebar: null,
     drawnGraph: null,
-    drawnPoints: null,
+    drawnPoints: null
   }; 
   
   // create datatable
@@ -283,30 +314,12 @@ function addFunction(point_data) {
     colHeaders: ['X', 'F(X)'],
     minSpareRows: 1,
     fillHandle: true,
-    onChange: function(data) { 
-      if (func.dataTable && func.dataTable.listening) {
-        console.log('Data table changed');
-        
-        func.data = $.map(func.dataTable.getData(), function(o,i) {
-          if (o[0] !== null && o[1] !== null) return [o];
-        });
-        
-        // redraw points
-        $.each(func.drawnPoints, function(i,o) {
-          o.remove();
-        });
-        func.drawnPoints = drawFunctionPoints(func);
-        
-        // redraw graph
-        func.drawnGraph.remove();
-        func.drawnGraph = drawFunctionGraph(func);
-      }
-    },
+    onChange: function(data) { _redrawFunction(func); },
     onBeforeChange: function (data) { /* TODO reject invalid values as in Handsontable demo */ }
   });
   
   // draw the graphs
-  // TODO data is duplicated between .data and .dataTable
+  // careful: data is duplicated between .data and .dataTable
   func.dataTable = func.drawnSidebar.data().handsontable;
   func.drawnPoints = drawFunctionPoints(func);
   func.drawnGraph = drawFunctionGraph(func);
@@ -323,6 +336,32 @@ function addFunction(point_data) {
   return func;
 }
 
+function redrawFunctions() {
+  console.log('Calling redrawFunctions');
+  for (var i in optimalApp.functions) {
+    _redrawFunction(optimalApp.functions[i]);
+  }
+}
+
+function _redrawFunction(func) { 
+  if (func.dataTable && func.dataTable.listening) {
+    
+    func.data = $.map(func.dataTable.getData(), function(o,i) {
+      if (o[0] !== null && o[1] !== null) return [o];
+    });
+    
+    // redraw points
+    $.each(func.drawnPoints, function(i,o) {
+      o.remove();
+    });
+    func.drawnPoints = drawFunctionPoints(func);
+    
+    // redraw graph
+    func.drawnGraph.remove();
+    func.drawnGraph = drawFunctionGraph(func);
+  }
+}
+
 // (re)draw a function's points
 function drawFunctionPoints(func) {
   
@@ -331,15 +370,15 @@ function drawFunctionPoints(func) {
     withLabel: false
   };
   
-  var xvals = $.map(func.data, function(o,i) { return o[0]; });
-  var yvals = $.map(func.data, function(o,i) { return o[1]; });
+  var xvals = $.map(func.data, function(o,i) { return pointFilter(o)[0]; });
+  var yvals = $.map(func.data, function(o,i) { return pointFilter(o)[1]; });
   var x_min = Math.min.apply(this, xvals);
   var x_max = Math.max.apply(this, xvals);
   
   // create and bind event handler for each point
   var points = $.map(func.data, function(o,i) {
     
-    var p = optimalApp.board.create('point', o, point_options);
+    var p = optimalApp.board.create('point', pointFilter(o), point_options);
     
     // mousemove highlight of data table
     JXG.addEvent(p.rendNode, 'click', function(e) {
@@ -366,10 +405,11 @@ function drawFunctionPoints(func) {
     
     // handle editing of functions
     JXG.addEvent(p.rendNode, 'mouseup', function(e) {
-      func.dataTable.setDataAtCell(i, 0, p.coords.usrCoords[1]);
-      func.dataTable.setDataAtCell(i, 1, p.coords.usrCoords[2]);
-      func.data[i][0] = p.coords.usrCoords[1];
-      func.data[i][1] = p.coords.usrCoords[2];
+      var newpoint = [p.coords.usrCoords[1], p.coords.usrCoords[2]];
+      func.dataTable.setDataAtCell(i, 0, pointInvFilter(newpoint[0]));
+      func.dataTable.setDataAtCell(i, 1, pointInvFilter(newpoint[1]));
+      func.data[i][0] = pointInvFilter(newpoint[0]);
+      func.data[i][1] = pointInvFilter(newpoint[1]);
     }, p);
     
     return p;
@@ -387,8 +427,8 @@ function drawFunctionGraph(func) {
     withLabel: false
   };
   
-  var xvals = $.map(func.data, function(o,i) { return o[0]; });
-  var yvals = $.map(func.data, function(o,i) { return o[1]; });
+  var xvals = $.map(func.data, function(o,i) { return pointFilter(o)[0]; });
+  var yvals = $.map(func.data, function(o,i) { return pointFilter(o)[1]; });
   var x_min = Math.min.apply(this, xvals);
   var x_max = Math.max.apply(this, xvals);
   
@@ -414,7 +454,7 @@ function drawFunctionGraph(func) {
   }, functionGraph);
   
   JXG.addEvent(functionGraph.rendNode, 'click', function(e) {
-    // TODO additional interactions when a function graph is clicked on, etc.
+    // no additional interactions when a function graph is clicked on yet
   }, functionGraph);
   
   return functionGraph;
@@ -436,9 +476,6 @@ function locateSelectionBox() {
 function selectFunction(func) {
   
   $(func.dataTable.rootElement.context).css('opacity', 0.5);
-  
-  // TODO component: rotate
-  // TODO interaction: rotate
   
   optimalApp.selectedFunction = func;
   optimalApp.selectedBBox = initSelectionBox(func.drawnGraph);
@@ -481,10 +518,13 @@ function scaleFunction(xscale, yscale, xpivot0_px, ypivot0_px, xpivot_px, ypivot
   
   // update data and points
   $.each(optimalApp.selectedFunction.data, function(i,o) {
-    
-    o[0] = xpivot + (o[0] - xpivot0) * xscale;
-    o[1] = ypivot + (o[1] - ypivot0) * yscale;
-    optimalApp.selectedFunction.drawnPoints[i].moveTo(o);
+    var newpoint = [
+      xpivot + (pointFilter(o)[0] - xpivot0) * xscale,
+      ypivot + (pointFilter(o)[1] - ypivot0) * yscale
+    ];
+    o[0] = pointInvFilter(newpoint)[0];
+    o[1] = pointInvFilter(newpoint)[1];
+    optimalApp.selectedFunction.drawnPoints[i].moveTo(newpoint);
   });
   
   // update function graph
@@ -502,11 +542,12 @@ function translateFunction(dx_px, dy_px) {
   
   // update data and points
   $.each(optimalApp.selectedFunction.data, function(i,o) {
-    o[0] += dx;
-    o[1] += dy;
-    optimalApp.selectedFunction.drawnPoints[i].moveTo(o);
+    var newpoint = [o[0] + dx, o[1] + dy];
+    o[0] = pointInvFilter(newpoint)[0];
+    o[1] = pointInvFilter(newpoint)[1];
+    optimalApp.selectedFunction.drawnPoints[i].moveTo(newpoint);
   });
-  
+ 
   // update function graph
   optimalApp.selectedFunction.drawnGraph.remove();
   optimalApp.selectedFunction.drawnGraph = drawFunctionGraph(optimalApp.selectedFunction);
@@ -525,9 +566,15 @@ function rotateFunction(theta, xpivot_px, ypivot_px) {
 
   // update data and points
   $.each(optimalApp.selectedFunction.data, function(i,o) {
-    o[0] = (o[0]-xpivot) * Math.cos(theta) - (o[1]-ypivot) * Math.sin(theta) + xpivot;
-    o[1] = (o[0]-xpivot) * Math.sin(theta) + (o[1]-ypivot) * Math.cos(theta) + ypivot;
-    optimalApp.selectedFunction.drawnPoints[i].moveTo(o);
+    var newpoint = [
+      (pointFilter(o)[0]-xpivot) * Math.cos(theta) -
+        (pointFilter(o)[1]-ypivot) * Math.sin(theta) + xpivot,
+      (pointFilter(o)[0]-xpivot) * Math.sin(theta) +
+        (pointFilter(o)[1]-ypivot) * Math.cos(theta) + ypivot
+    ];
+    o[0] = pointInvFilter(newpoint)[0];
+    o[1] = pointInvFilter(newpoint)[1];
+    optimalApp.selectedFunction.drawnPoints[i].moveTo(newpoint);
   });
   
   // update function graph
@@ -559,9 +606,11 @@ function initSelectionBox(jxg_elem) {
     width: Math.round(width),
     backgroundColor: 'rgba(0,0,0,0.05)'
   }).insertAfter($parent); 
-  // FIXME use appendTo so we can set overflow: hidden on the parent element
-  // which requires us position the bounding box relative to the graph box rather than the page
-  
+  /* we should use appendTo so we can set overflow: hidden 
+     on the parent element, which also requires us to position 
+     the bounding box relative to the graph box rather than the page 
+  */
+
   // initialize a layer to receive and handle events
   var $trigger = $('<div id="image-crop-trigger"/>')
     .appendTo($container);
