@@ -2,11 +2,7 @@
    Globals
 */
 
-var optimalApp = null;
-
-// reset the app
-function reset() {
-  optimalApp = {    
+var optimalApp = {    
     // app globals
     functions: [],
     board: null,
@@ -38,9 +34,6 @@ function reset() {
     selectionBaseHeight: 0,
     resizingFrom: null
   };
-  $('#datatables').empty();
-  initializeBoard();
-}
 
 /* **********************************************************************
    Presets tab
@@ -48,7 +41,7 @@ function reset() {
 
 // initialize the graph with preset points and a type of function
 function setModel(model) {  
-  reset();
+  initializeBoard();
   switchModel(model);
   
   var presets = {
@@ -233,8 +226,8 @@ function centerBoard() {
 
 // import data from points onto the graph
 function importPoints(points) {
-  reset();
-  
+  initializeBoard();
+
   // split data into separate functions
   var segments = [];
   var last_x = Number.POSITIVE_INFINITY;
@@ -266,9 +259,16 @@ function importPoints(points) {
    JSXGraph Board functions
 */
 
-// remove all functions from board
+// reset the board, functions, and global variable
 function initializeBoard() {
   
+  // reset app elements
+  $('#datatables').empty();  
+  optimalApp.selectedFunction = null;
+  optimalApp.selectedBBox = null;
+  optimalApp.logXMode = false;
+  optimalApp.logYMode = false;
+
   var board_options = {
     showCopyright: false,
     keepaspectratio: true,
@@ -1078,7 +1078,6 @@ function initializeRangeSelectionBox() {
 }
 
 $(document).ready(function() {
-  reset();
   initializeBoard();
   initializeRangeSelectionBox();
   $('#box').aToolTip({
