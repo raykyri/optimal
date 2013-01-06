@@ -1,11 +1,3 @@
-// TODO - (1) debug the logarithmic scale and pointFilter()
-//      - (1) work on a UI for setting a scale and range / bounding box, at app launch
-//      - (1) add UI to manage each functio in the sidebar (delete/copy/etc)
-
-// 323  - ?
-
-// 445  - ?
-
 /* **********************************************************************
    Globals
 */
@@ -20,6 +12,12 @@ var optimalApp = {
   logXMode: false,
   logYMode: false,
   functionmodel: JXG.Math.Numerics.lagrangePolynomial,
+  
+  // for axes
+  xAxisName: null,
+  yAxisName: null,  
+  xLogRange: 0,
+  yLogRange: 0,
   
   // for selection
   selectedFunction: null,
@@ -47,57 +45,59 @@ function reset() {
   initializeBoard();
 }
 
-// update the graph's axes to set x/y axes to logarithmic or linear
+// set x/y axes of graph to logarithmic or linear, and update graph
 function updateAxes() {
-  var xlabels = $('.handsontable th.htColHeader:first-child span').text(
-    optimalApp.logXMode ? 'log(X)' : 'X'
-  );
-  var ylabels = $('.handsontable th.htColHeader span').not(xlabels).text(
-    optimalApp.logYMode ? 'log F(X)' : 'F(X)'
-  );
-  redrawFunctions();
+  
+  // update column labels on the data tables
+  var xlabels = 
+    $('.handsontable th.htColHeader:first-child span').text(getColHeaders()[0]);
+  var ylabels = 
+    $('.handsontable th.htColHeader span').not(xlabels).text(getColHeaders()[1]);
+  
+  // redraw functions and recenter graph using the new scale
+  for (var i in optimalApp.functions) {
+    _redrawFunction(optimalApp.functions[i]);
+  }
+  centerBoard();
 }
+
+function getColHeaders() {
+  return [ 
+    optimalApp.logXMode ? 'log(X)' : 'X',
+    optimalApp.logYMode ? 'log F(X)' : 'F(X)'
+  ];
+}
+
+/*
+// disabled filters
+function pointFilter(o) { return o; }
+function pointInvFilter(o) { return o; }
+*/
 
 // filter for point data used when rendering points onto the graph
 // accepts and returns [x, y] array used to construct a point
 function pointFilter(o) {
-  if (!optimalApp.logXMode && !optimalApp.logYMode) return o;
-  var newpoint = [
-    optimalApp.logXMode ? Math.log(o[0]) : o[0], 
-    optimalApp.logYMode ? Math.log(o[1]) : o[1]
-  ];
-  console.log(
-    'filtering point ' + JSON.stringify(o) + '=>' + JSON.stringify(newpoint)
-  );
-  return newpoint;
+if (!optimalApp.logXMode && !optimalApp.logYMode) return o;
+var newpoint = [
+optimalApp.logXMode ? Math.log(o[0]) / Math.LN10 : o[0], 
+optimalApp.logYMode ? Math.log(o[1]) / Math.LN10 : o[1]
+];
+console.log(
+'filtering point ' + JSON.stringify(o) + '=>' + JSON.stringify(newpoint)
+);
+return newpoint;
 }
 
 function pointInvFilter(o) {
-  if (!optimalApp.logXMode && !optimalApp.logYMode) return o;
-  var newpoint = [
-    optimalApp.logXMode ? Math.exp(Math.LN10 * o[0]) : o[0], 
-    optimalApp.logYMode ? Math.exp(Math.LN10 * o[1]) : o[1]
-  ];
-  console.log(
-    'filtering point inversely ' + JSON.stringify(o) + '=>' + JSON.stringify(newpoint)
-  );
-  return newpoint;
-}
-
-// initialize the app
-function initialize() {
-  initializeBoard();
-  $('#box').aToolTip({
-    inSpeed: 0,
-    outSpeed: 0,
-    tipContent: function() { return getTooltip(); }
-  });
-  $('#func-copy').click(function() { optimalApp.copyMode = true; });
-  $('#func-edit').click(function() { optimalApp.copyMode = false; });
-  $('#xaxis-lin').click(function() { optimalApp.logXMode = false; updateAxes(); });
-  $('#xaxis-log').click(function() { optimalApp.logXMode = true; updateAxes(); });
-  $('#yaxis-lin').click(function() { optimalApp.logYMode = false; updateAxes(); });
-  $('#yaxis-log').click(function() { optimalApp.logYMode = true; updateAxes(); });
+if (!optimalApp.logXMode && !optimalApp.logYMode) return o;
+var newpoint = [
+optimalApp.logXMode ? Math.exp(Math.LN10 * o[0]) : o[0], 
+optimalApp.logYMode ? Math.exp(Math.LN10 * o[1]) : o[1]
+];
+console.log(
+'filtering point inversely ' + JSON.stringify(o) + '=>' + JSON.stringify(newpoint)
+);
+return newpoint;
 }
 
 /* **********************************************************************
@@ -105,9 +105,67 @@ function initialize() {
 */
 
 // initialize the graph with preset points and a type of function
-function setModel(model) {
+function setModel(model) {  
+  reset();
   switchModel(model);
-  importPoints(presets[model]);
+  
+  var presets = {
+    linear: [
+      [1,1],
+      [5,3]
+    ],
+    quadratic: [
+      [1,0.2],
+      [3,1.8],
+      [5,5.0]
+    ],
+    cubic: [
+      [1,0.2],
+      [3,1.8],
+      [5,5.0],
+      [7,12.0]
+    ],
+    quartic: [
+      [1,0.2],
+      [3,1.8],
+      [5,5.0],
+      [7,12.0],
+      [9,64.0]
+    ],
+    exponential: [
+    ],
+    logistic: [
+    ],
+    logarithmic: [
+    ],
+    step: [
+    ],
+    gaussian: [
+    ],
+    interpolated: [
+      [1,7],
+      [3,5],
+      [5,4],
+      [7,3],
+      [9,1]
+    ],
+    polynomial: [
+      [1,7],
+      [3,5],
+      [5,4],
+      [7,3],
+      [9,1]
+    ]
+  };
+
+  var initial_points = $.map(presets[model], function(o,i) {
+    return [[
+      o[0] * Math.exp( (optimalApp.xLogRange-1) * Math.LN10 ), 
+      o[1] * Math.exp( (optimalApp.yLogRange-1) * Math.LN10 )
+    ]];
+  });
+  importPoints(initial_points);
+  centerBoard();
 }
 
 // switch the type of function graphed
@@ -214,11 +272,18 @@ function importData() {
   }
 }
 
-// import data from points onto the graph
-function importPoints(points) {
-  // calculate bounds of data
-  var min_x, min_y, max_x, max_y;
-  $.each(points, function(i,o) {
+// centers board on 
+function centerBoard() {
+  var points, min_x, min_y, max_x, max_y;
+  if (optimalApp.selectedFunction !== null) {
+    points = optimalApp.selectedFunction.data;
+  } else {
+    points = $.map(optimalApp.functions, function(o,i) { return o.data; });
+  }
+  
+  // calculate min/max of data
+  $.each(points, function(i,unfiltered_point) {
+    var o = pointFilter(unfiltered_point);
     if (o.length !== 2) return;
     if (min_x === undefined || o[0] < min_x) min_x = o[0];
     if (max_x === undefined || o[0] > max_x) max_x = o[0];
@@ -229,13 +294,18 @@ function importPoints(points) {
   var range_y = max_y - min_y;
   var margin = 0.1;
   
-  // reset graph viewport
-  initializeBoard([
+  // resize graph around the data
+  optimalApp.board.setBoundingBox([
     min_x - range_x * margin,
     max_y + range_y * margin,
     max_x + range_x * margin,
     min_y - range_y * margin
   ]);
+}
+
+// import data from points onto the graph
+function importPoints(points) {
+  reset();
   
   // split data into separate functions
   var segments = [];
@@ -260,6 +330,8 @@ function importPoints(points) {
   // switch to functions tab
   $('#datatable').empty();
   $('.nav-tabs a[href="#functions"]').tab('show');
+  $('#graph-overlay').hide();
+  $('.jxgbox').css('opacity', 1.0);
 }
 
 /* **********************************************************************
@@ -267,7 +339,7 @@ function importPoints(points) {
 */
 
 // remove all functions from board
-function initializeBoard(boundingbox) {
+function initializeBoard() {
   
   var board_options = {
     showCopyright: false,
@@ -279,25 +351,51 @@ function initializeBoard(boundingbox) {
     originY: 320,
     unitX: 25,
     unitY: 25,
-    boundingbox: [-10, 10, 10, -10] // [-x, y, x, -y]
+    boundingbox: [-10, 10, 10, -10] // to be set by centerBoard()
   };
   
   if (optimalApp.board !== null) {
     JXG.JSXGraph.freeBoard(optimalApp.board);
   }
-  if (boundingbox !== undefined) {
-    board_options.boundingbox = boundingbox;
-  }
   
   optimalApp.board = JXG.JSXGraph.initBoard('box', board_options);
-
+  
   optimalApp.board.addHook(redrawSelectionBox, 'update');
+}
+
+function removeFunction(func) {
+  var index = optimalApp.functions.indexOf(func);
+  if (index === -1) return;
+  
+  optimalApp.functions.splice(index);
+  
+  // remove data table
+  func.dataTable.destroy();
+  func.drawnSidebar.detach();
+  
+  // remove function graph and points
+  func.drawnGraph.remove();
+  $.each(func.drawnPoints, function(i,o) {
+    o.remove();
+  });
+  
+  // remove any selection box
+  if (optimalApp.selectedFunction === func) {
+    unselectFunction();
+  }
+
+  // switch back to the chooser if we have cleared all functions
+  if (optimalApp.functions.length === 0) {
+    $('.nav-tabs a[href="#presets"]').tab('show');
+    $('#graph-overlay').show();
+    $('.jxgbox').css('opacity', 0.2);
+  }
 }
 
 // add a function to the datatable and board
 function addFunction(point_data) { 
   optimalApp.board.suspendUpdate();
- 
+  
   var func = {
     data: point_data,
     dataTable: null,
@@ -311,11 +409,16 @@ function addFunction(point_data) {
     $('<div class="datatable"></div>')
     .appendTo('#datatables');
   
+  // create delete button
+  $('<a class="remove-function" href="#"><i class="icon-trash"></i></a>')
+    .click(function() { removeFunction(func); })
+    .appendTo(func.drawnSidebar);
+  
   func.drawnSidebar.handsontable({
     startRows: 3,
     startCols: 2,
     rowHeaders: false,
-    colHeaders: ['X', 'F(X)'],
+    colHeaders: getColHeaders(),
     minSpareRows: 1,
     fillHandle: true,
     onChange: function(data) { _redrawFunction(func); },
@@ -328,7 +431,7 @@ function addFunction(point_data) {
   func.drawnPoints = drawFunctionPoints(func);
   func.drawnGraph = drawFunctionGraph(func);
   updateDataTable(func);
-
+  
   optimalApp.functions.push(func);
   optimalApp.board.unsuspendUpdate();
   return func;
@@ -342,14 +445,6 @@ function updateDataTable(func) {
     func.dataTable.setDataAtCell(i, 1, o[1]);
   });
   func.dataTable.listening = true;
-}
-
-function redrawFunctions() {
-  console.log('Calling redrawFunctions');
-  for (var i in optimalApp.functions) {
-    _redrawFunction(optimalApp.functions[i]);
-  }
-  redrawSelectionBox();
 }
 
 function _redrawFunction(func) { 
@@ -394,6 +489,7 @@ function drawFunctionPoints(func) {
       //selectFunction(func);
     }, p);
     
+    // display tooltip when mouse is over function
     JXG.addEvent(p.rendNode, 'mouseover', function(e) {
       if (optimalApp.copyMode === true) {
         setTooltip('Drag to copy and edit function');
@@ -402,6 +498,7 @@ function drawFunctionPoints(func) {
       }
     }, p);
     
+    // clear tooltip when mouse is not over function
     JXG.addEvent(p.rendNode, 'mouseout', function(e) {
       setTooltip();
     }, p);
@@ -415,10 +512,10 @@ function drawFunctionPoints(func) {
     // handle editing of functions
     JXG.addEvent(p.rendNode, 'mouseup', function(e) {
       var newpoint = [p.coords.usrCoords[1], p.coords.usrCoords[2]];
-      func.dataTable.setDataAtCell(i, 0, pointInvFilter(newpoint[0]));
-      func.dataTable.setDataAtCell(i, 1, pointInvFilter(newpoint[1]));
-      func.data[i][0] = pointInvFilter(newpoint[0]);
-      func.data[i][1] = pointInvFilter(newpoint[1]);
+      func.dataTable.setDataAtCell(i, 0, pointInvFilter(newpoint)[0]);
+      func.dataTable.setDataAtCell(i, 1, pointInvFilter(newpoint)[1]);
+      func.data[i][0] = pointInvFilter(newpoint)[0];
+      func.data[i][1] = pointInvFilter(newpoint)[1];
     }, p);
     
     return p;
@@ -450,6 +547,7 @@ function drawFunctionGraph(func) {
     selectFunction(func);
   }, functionGraph);
   
+  // display tooltip when mouse is over function
   JXG.addEvent(functionGraph.rendNode, 'mouseover', function(e) {
     if (optimalApp.copyMode === true) {
       setTooltip('Click to copy and transform function');
@@ -458,6 +556,7 @@ function drawFunctionGraph(func) {
     }
   }, functionGraph);
   
+  // clear tooltip when mouse is not over function
   JXG.addEvent(functionGraph.rendNode, 'mouseout', function(e) {
     setTooltip();
   }, functionGraph);
@@ -497,7 +596,7 @@ function selectFunction(func) {
 
 function unselectFunction() {
   $(optimalApp.selectedFunction.drawnSidebar).css('opacity', 1.0);
-
+  
   for (var i in optimalApp.selectedBBox.handle) {
     $(optimalApp.selectedBBox.handle[i]).unbind();
   }
@@ -557,7 +656,7 @@ function translateFunction(dx_px, dy_px) {
     o[1] = pointInvFilter(newpoint)[1];
     optimalApp.selectedFunction.drawnPoints[i].moveTo(newpoint);
   });
- 
+  
   // update function graph and data table
   updateDataTable(optimalApp.selectedFunction);
   optimalApp.selectedFunction.drawnGraph.remove();
@@ -569,12 +668,12 @@ function rotateFunction(theta, xpivot_px, ypivot_px) {
   optimalApp.board.suspendUpdate();
   
   var xpivot = (xpivot_px - optimalApp.board.cPos[0] - 
-                 optimalApp.board.origin.scrCoords[1]) / optimalApp.board.unitX;
+                optimalApp.board.origin.scrCoords[1]) / optimalApp.board.unitX;
   var ypivot = -(ypivot_px - optimalApp.board.cPos[1] - 
-                  optimalApp.board.origin.scrCoords[2]) / optimalApp.board.unitY;
+                 optimalApp.board.origin.scrCoords[2]) / optimalApp.board.unitY;
   console.log('Rotating by ' + theta * 180/Math.PI + 'deg ' + 
               'about (' + xpivot + ', ' + ypivot + ')');
-
+  
   // update data and points
   $.each(optimalApp.selectedFunction.data, function(i,o) {
     var newpoint = [
@@ -622,7 +721,7 @@ function initSelectionBox(jxg_elem) {
      on the parent element, which also requires us to position 
      the bounding box relative to the graph box rather than the page 
   */
-
+  
   // initialize a layer to receive and handle events
   var $trigger = $('<div id="image-crop-trigger"/>')
     .appendTo($container);
@@ -638,7 +737,7 @@ function initSelectionBox(jxg_elem) {
     .appendTo($container);
   var $center = $('<div id="image-crop-rotate-center"/>')
     .appendTo($container);
-
+  
   // initialize handles on the corners/sides
   var $nwResizeHandle = $('<div class="image-crop-resize-handle" id="image-crop-nw-resize-handle" />')
     .appendTo($container);
@@ -656,12 +755,12 @@ function initSelectionBox(jxg_elem) {
     .appendTo($container);
   var $seResizeHandle = $('<div class="image-crop-resize-handle" id="image-crop-se-resize-handle" />')
     .appendTo($container);
-
+  
   // initialize a button to clear the selection
   var $clearbutton = $('<input id="image-crop-clear-selection" type="button" value="Clear Selection"/>')
     .mouseup(clearSelectionBox)
     .appendTo($container);
-
+  
   $nResizeHandle.add($sResizeHandle).css({ cursor: 'row-resize' });
   $eResizeHandle.add($wResizeHandle).css({ cursor: 'col-resize' });
   $seResizeHandle.css({ cursor: 'se-resize' });
@@ -692,12 +791,12 @@ function clearSelectionBox() {
 // handler to redraw bounding box upon zooming/scrolling
 function redrawSelectionBox() {
   console.log('redrawSelectionBox called');
-
+  
   if (optimalApp.selectedFunction !== null && 
       optimalApp.selectedBBox !== null &&
       optimalApp.selectedBBox.container !== null) {
     optimalApp.selectedBBox.container.detach();
-
+    
     optimalApp.selectedBBox = initSelectionBox(optimalApp.selectedFunction.drawnGraph);
     optimalApp.selectedBBox.trigger.mousedown(mousedownMoveHandler);
     optimalApp.selectedBBox.rotator.mousedown(mousedownRotateHandler);
@@ -788,7 +887,7 @@ function rotateSelection(event) {
   var cy = optimalApp.selectionBasePosition[1] + Math.round(optimalApp.selectionBaseHeight/2);
   optimalApp.selectionRotation = 
     90 + (180/Math.PI) * Math.atan2(event.pageY - cy, event.pageX - cx);
-
+  
   updateSelection();
 }
 
@@ -810,12 +909,12 @@ function releaseResizeSelection(event) {
 
 function releaseRotateSelection(event) {
   console.log('Calling releaseRotateSelection');
-
+  
   rotateSelection(event);
   releaseSelection(event);
-
+  
   rotateFunction(
-    -(optimalApp.selectionRotation % 360) * Math.PI/180,
+      -(optimalApp.selectionRotation % 360) * Math.PI/180,
     optimalApp.selectionBasePosition[0] + Math.round(optimalApp.selectionBaseWidth/2),
     optimalApp.selectionBasePosition[1] + Math.round(optimalApp.selectionBaseHeight/2)
   );
@@ -865,10 +964,10 @@ function setSelection() {
   
   optimalApp.selectionOrigin[0] = event.pageX;
   optimalApp.selectionOrigin[1] = event.pageY;
-
+  
   optimalApp.selectionRotation = 0;
   // since the box is redrawn after being rotated, it should start vertically aligned
-
+  
   optimalApp.resizingFrom = event.target.id;
 }
 
@@ -934,4 +1033,85 @@ function deepcopy(arr) {
    Initialization
 */
 
-$(document).ready(initialize);
+function initializeRangeSelectionBox() {
+  var update = function (event, ui) {
+    var slider = $(ui.handle.parentElement);
+    var magnitude = '10<sup>' + ui.value + '</sup>';
+    if (slider.attr('id') === 'graph-overlay-scale-x') {
+      //$('#graph-overlay-min-x').html(min);
+      $('#graph-overlay-max-x').html(magnitude);
+      optimalApp.xLogRange = ui.value;
+    } else {
+      //$('#graph-overlay-min-y').html(min);
+      $('#graph-overlay-max-y').html(magnitude);
+      optimalApp.yLogRange = ui.value;
+    }
+  };
+  
+  $('#graph-overlay-scale-x').slider({
+    orientation: 'horizontal',
+    range: 'min',
+    min: -40,
+    max: 40,
+    slide: update,
+    change: update
+  }).slider('value', 1);
+  
+  $('#graph-overlay-scale-y').slider({
+    orientation: 'vertical',
+    range: 'min',
+    min: -40,
+    max: 40,
+    slide: update,
+    change: update
+  }).slider('value', 1);
+  
+  $('#graph-overlay-label-x')
+    .hCenterInElement()
+    .editable(function(value, settings) {
+      $(this).hCenterInElement().css('background-color', '#aaa');
+      optimalApp.xAxisName = value;
+      return value;
+    }, {
+      onblur: 'submit',
+      style: 'display: inline'
+    });
+  
+  $('#graph-overlay-label-y')
+    .vCenterInElement()
+    .editable(function(value, settings) {
+      $(this).vCenterInElement().css('background-color', '#aaa');
+      optimalApp.yAxisName = value;
+      return value;
+    }, {
+      onblur: 'submit',
+      style: 'display: inline'
+    });
+}
+
+$(document).ready(function() {
+  initializeBoard();
+  initializeRangeSelectionBox();
+  $('#box').aToolTip({
+    inSpeed: 0,
+    outSpeed: 0,
+    tipContent: function() { return getTooltip(); }
+  });
+  $('#func-copy').click(function() { optimalApp.copyMode = true; });
+  $('#func-edit').click(function() { optimalApp.copyMode = false; });
+  $('#xaxis-lin').click(function() { optimalApp.logXMode = false; updateAxes(); });
+  $('#xaxis-log').click(function() { optimalApp.logXMode = true; updateAxes(); });
+  $('#yaxis-lin').click(function() { optimalApp.logYMode = false; updateAxes(); });
+  $('#yaxis-log').click(function() { optimalApp.logYMode = true; updateAxes(); });
+  
+  $('.jxgbox').css('opacity', 0.2);
+  $('.nav-tabs a[href="#presets"]').bind('click', function() {
+    $('.jxgbox').css('opacity', 0.2);
+    $('#graph-overlay').show();
+  });
+  $('.nav-tabs a[href="#functions"]').bind('click', function() {
+    $('.jxgbox').css('opacity', 1.0);
+    $('#graph-overlay').hide();
+  });
+  
+});

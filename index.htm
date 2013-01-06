@@ -2,24 +2,30 @@
 <html>
   <head>
     <title>Function Sketcher</title>
-    
+
     <!--[if lt IE 9]>
         <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
         <![endif]-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/bootstrap.min.css" type="text/css" />
-    <link rel="stylesheet" href="css/bootstrap-responsive.min.css" type="text/css" />
-    <link rel="stylesheet" href="css/jsxgraph.css" type="text/css" />
-    <link rel="stylesheet" href="css/jquery.atooltip.css" type="text/css" />
-    <link rel="stylesheet" href="css/jquery.handsontable.css" type="text/css" />
-    <link rel="stylesheet" href="css/style.css" type="text/css" />
-    <link rel="stylesheet" href="css/imagecrop.css" type="text/css" />
-    <script type="text/javascript" src="js/jquery.min.js"></script>
-    <script type="text/javascript" src="js/jquery.atooltip.js"></script>
-    <script type="text/javascript" src="js/jquery.handsontable.js"></script>
-    <script type="text/javascript" src="js/handlebars.js"></script>
-    <script type="text/javascript" src="js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="js/jsxgraphcore.js"></script>
+    <link rel="stylesheet" href="/css/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/bootstrap-responsive.min.css" type="text/css" />
+    <link rel="stylesheet" href="/css/bootstrap-slider.css" type="text/css" />
+    <link rel="stylesheet" href="/css/jsxgraph.css" type="text/css" />
+    <link rel="stylesheet" href="/css/jquery-ui.css" type="text/css" />
+    <link rel="stylesheet" href="/css/jquery.atooltip.css" type="text/css" />
+    <link rel="stylesheet" href="/css/jquery.handsontable.css" type="text/css" />
+    <link rel="stylesheet" href="/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="/css/imagecrop.css" type="text/css" />
+    <script type="text/javascript" src="/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/js/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="/js/jquery.center.js"></script>
+    <script type="text/javascript" src="/js/jquery.jeditable.js"></script>
+    <script type="text/javascript" src="/js/jquery.atooltip.js"></script>
+    <script type="text/javascript" src="/js/jquery.handsontable.js"></script>
+    <script type="text/javascript" src="/js/handlebars.js"></script>
+    <script type="text/javascript" src="/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/js/jsxgraphcore.js"></script>
 
   </head>
   <body>
@@ -33,12 +39,12 @@
         </div>
       </div>
     </div>
-    
+
     <div class="container">
-      
+
       <div class="row" id="controls">
         <div class="span4 sidebar-nav">
-          
+
           <ul class="nav nav-tabs">
             <li class="active">
               <a href="#presets" data-toggle="tab">Presets</a>
@@ -50,20 +56,20 @@
               <a href="#data" data-toggle="tab">Import/Export</a>
             </li>
           </ul>
-          
+
           <div class="tab-content">
-            
+
             <div class="tab-pane active" id="presets">
               <div class="well">
                 <ul class="nav nav-list">
-                  
+
                   <li class="nav-header">
                     Select a Function
                   </li>
                   <li>
-                    
+
                     <ul class="thumbnails">
-                      
+
                       <li class="span2">
                         <a href="javascript:setModel('linear')" class="thumbnail">
                           <img src="/img/func_lin.png"></a>
@@ -121,17 +127,17 @@
                         </div>
                       </li>
                     </ul>
-                    
+
                   </li>
-                  
+
                 </ul>
               </div>
             </div>
-            
+
             <div class="tab-pane" id="data">
               <div class="well">
                 <ul class="nav nav-list">
-                  
+
                   <li class="nav-header">
                     Data
                   </li>
@@ -139,7 +145,7 @@
                     <textarea onclick="javascript:$(this).removeAttr('onclick').empty();"
                               id="datatable">Enter function data here...</textarea>
                   </li>
-                  
+
                   <li>
                     <div class="btn-toolbar">
                       <div class="btn-group">
@@ -159,14 +165,14 @@
                       </div>
                     </div>
                   </li>
-                  
+
                 </ul>
               </div>
             </div>
             <div class="tab-pane" id="functions">
               <div class="well">
                 <ul class="nav nav-list">
-                  
+
                   <li class="nav-header">
                     <div class="left-mid-right">
                       <div>X-Axis</div>
@@ -174,7 +180,7 @@
                       <div>Function Editing</div>
                     </div>
                   </li>
-                  <li class="nav-header"> 
+                  <li class="nav-header">
                     <div class="left-mid-right">
                       <div class="btn-toolbar">
                         <div class="btn-group" data-toggle="buttons-radio">
@@ -196,7 +202,7 @@
                       </div>
                     </div>
                   </li>
-                  
+
                   <li class="nav-header">
                     Functions
                   </li>
@@ -204,7 +210,7 @@
                     <div id="datatables">
                     </div>
                   </li>
-                  
+
                   <li class="pull-down">
                     <div class="btn-toolbar">
                       <div class="btn-group">
@@ -221,17 +227,31 @@
                     </div>
                     <small>Shift-drag to pan. Zoom using mouse wheel.</small>
                   </li>
-                  
-                </ul>                
+
+                </ul>
               </div>
             </div>
-            
-            
+
+
           </div>
         </div>
-        
-        <div class="span8">
+
+        <div class="span8 graph-container">
           <div id="box" class="jxgbox"></div>
+          <div id="graph-overlay">
+            <div class="slider" id="graph-overlay-scale-x">
+            </div>
+            <div class="slider" id="graph-overlay-scale-y">
+            </div>
+            <div class="minifigure">
+              <div class="label" id="graph-overlay-label-x">Set Units</div>
+              <div class="label" id="graph-overlay-label-y">Set Units</div>
+              <div class="label" id="graph-overlay-min-x">0</div>
+              <div class="label" id="graph-overlay-max-x">0</div>
+              <div class="label" id="graph-overlay-min-y">...</div>
+              <div class="label" id="graph-overlay-max-y">...</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -246,9 +266,9 @@
         </tableset>
       </table>
     </script>
-    
+
 </div>
-<script type="text/javascript" src="js/presets.js"></script>
-<script type="text/javascript" src="js/app.js"></script>
+<script type="text/javascript" src="/js/presets.js"></script>
+<script type="text/javascript" src="/js/app.js"></script>
 </body>
 </html>
