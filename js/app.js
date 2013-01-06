@@ -2,102 +2,44 @@
    Globals
 */
 
-var optimalApp = {
-  
-  // app globals
-  functions: [],
-  board: null,
-  tooltip: null,
-  copyMode: true,
-  logXMode: false,
-  logYMode: false,
-  functionmodel: JXG.Math.Numerics.lagrangePolynomial,
-  
-  // for axes
-  xAxisName: null,
-  yAxisName: null,  
-  xLogRange: 0,
-  yLogRange: 0,
-  
-  // for selection
-  selectedFunction: null,
-  selectedBBox: null,
-  
-  // for bounding box for selected functions
-  selectionBasePosition: [0, 0],
-  selectionPosition: [0, 0],
-  selectionOffset: [0, 0],
-  selectionOrigin: [0, 0],
-  selectionRotation: 0,
-  selectionWidth: 0,
-  selectionHeight: 0,
-  selectionBaseWidth: 0,
-  selectionBaseHeight: 0,
-  resizingFrom: null
-};
+var optimalApp = null;
 
 // reset the app
 function reset() {
-  $.each(dataTables(), function(i,o) {
-    o.clear();
-  });
+  optimalApp = {    
+    // app globals
+    functions: [],
+    board: null,
+    tooltip: null,
+    copyMode: true,
+    logXMode: false,
+    logYMode: false,
+    functionmodel: JXG.Math.Numerics.lagrangePolynomial,
+    
+    // for axes
+    xAxisName: null,
+    yAxisName: null,  
+    xLogRange: 0,
+    yLogRange: 0,
+    
+    // for selection
+    selectedFunction: null,
+    selectedBBox: null,
+    
+    // for bounding box for selected functions
+    selectionBasePosition: [0, 0],
+    selectionPosition: [0, 0],
+    selectionOffset: [0, 0],
+    selectionOrigin: [0, 0],
+    selectionRotation: 0,
+    selectionWidth: 0,
+    selectionHeight: 0,
+    selectionBaseWidth: 0,
+    selectionBaseHeight: 0,
+    resizingFrom: null
+  };
   $('#datatables').empty();
   initializeBoard();
-}
-
-// set x/y axes of graph to logarithmic or linear, and update graph
-function updateAxes() {
-  
-  // update column labels on the data tables
-  var xlabels = 
-    $('.handsontable th.htColHeader:first-child span').text(getColHeaders()[0]);
-  var ylabels = 
-    $('.handsontable th.htColHeader span').not(xlabels).text(getColHeaders()[1]);
-  
-  // redraw functions and recenter graph using the new scale
-  for (var i in optimalApp.functions) {
-    _redrawFunction(optimalApp.functions[i]);
-  }
-  centerBoard();
-}
-
-function getColHeaders() {
-  return [ 
-    optimalApp.logXMode ? 'log(X)' : 'X',
-    optimalApp.logYMode ? 'log F(X)' : 'F(X)'
-  ];
-}
-
-/*
-// disabled filters
-function pointFilter(o) { return o; }
-function pointInvFilter(o) { return o; }
-*/
-
-// filter for point data used when rendering points onto the graph
-// accepts and returns [x, y] array used to construct a point
-function pointFilter(o) {
-if (!optimalApp.logXMode && !optimalApp.logYMode) return o;
-var newpoint = [
-optimalApp.logXMode ? Math.log(o[0]) / Math.LN10 : o[0], 
-optimalApp.logYMode ? Math.log(o[1]) / Math.LN10 : o[1]
-];
-console.log(
-'filtering point ' + JSON.stringify(o) + '=>' + JSON.stringify(newpoint)
-);
-return newpoint;
-}
-
-function pointInvFilter(o) {
-if (!optimalApp.logXMode && !optimalApp.logYMode) return o;
-var newpoint = [
-optimalApp.logXMode ? Math.exp(Math.LN10 * o[0]) : o[0], 
-optimalApp.logYMode ? Math.exp(Math.LN10 * o[1]) : o[1]
-];
-console.log(
-'filtering point inversely ' + JSON.stringify(o) + '=>' + JSON.stringify(newpoint)
-);
-return newpoint;
 }
 
 /* **********************************************************************
@@ -157,7 +99,7 @@ function setModel(model) {
       [9,1]
     ]
   };
-
+  
   var initial_points = $.map(presets[model], function(o,i) {
     return [[
       o[0] * Math.exp( (optimalApp.xLogRange-1) * Math.LN10 ), 
@@ -215,20 +157,6 @@ function switchModel(model) {
   default:
     alert('Invalid model to fit function to');
   }
-}
-
-/* **********************************************************************
-   Function Editor tab
-*/
-
-function dataTables() {
-  return $.map($('.datatable'), function(o,i) {
-    return $('.datatable:eq(' + i +')').data().handsontable;
-  });
-}
-
-// set up the jQuery data table
-function initializeTable() {
 }
 
 /* **********************************************************************
@@ -383,7 +311,7 @@ function removeFunction(func) {
   if (optimalApp.selectedFunction === func) {
     unselectFunction();
   }
-
+  
   // switch back to the chooser if we have cleared all functions
   if (optimalApp.functions.length === 0) {
     $('.nav-tabs a[href="#presets"]').tab('show');
@@ -566,6 +494,66 @@ function drawFunctionGraph(func) {
   }, functionGraph);
   
   return functionGraph;
+}
+
+
+/* **********************************************************************
+   Graph and Point related functions
+*/
+
+// set x/y axes of graph to logarithmic or linear, and update graph
+function updateAxes() {
+  
+  // update column labels on the data tables
+  var xlabels = 
+    $('.handsontable th.htColHeader:first-child span').text(getColHeaders()[0]);
+  var ylabels = 
+    $('.handsontable th.htColHeader span').not(xlabels).text(getColHeaders()[1]);
+  
+  // redraw functions and recenter graph using the new scale
+  for (var i in optimalApp.functions) {
+    _redrawFunction(optimalApp.functions[i]);
+  }
+  centerBoard();
+}
+
+function getColHeaders() {
+  return [ 
+    optimalApp.logXMode ? 'log(X)' : 'X',
+    optimalApp.logYMode ? 'log F(X)' : 'F(X)'
+  ];
+}
+
+/*
+// disabled filters
+function pointFilter(o) { return o; }
+function pointInvFilter(o) { return o; }
+*/
+
+// filter for point data used when rendering points onto the graph
+// accepts and returns [x, y] array used to construct a point
+function pointFilter(o) {
+  if (!optimalApp.logXMode && !optimalApp.logYMode) return o;
+  var newpoint = [
+    optimalApp.logXMode ? Math.log(o[0]) / Math.LN10 : o[0], 
+    optimalApp.logYMode ? Math.log(o[1]) / Math.LN10 : o[1]
+  ];
+  console.log(
+    'filtering point ' + JSON.stringify(o) + '=>' + JSON.stringify(newpoint)
+  );
+  return newpoint;
+}
+
+function pointInvFilter(o) {
+  if (!optimalApp.logXMode && !optimalApp.logYMode) return o;
+  var newpoint = [
+    optimalApp.logXMode ? Math.exp(Math.LN10 * o[0]) : o[0], 
+    optimalApp.logYMode ? Math.exp(Math.LN10 * o[1]) : o[1]
+  ];
+  console.log(
+    'filtering point inversely ' + JSON.stringify(o) + '=>' + JSON.stringify(newpoint)
+  );
+  return newpoint;
 }
 
 /* **********************************************************************
@@ -937,7 +925,7 @@ function releaseSelection(event) {
   event.stopPropagation();
   $(document).unbind('mousemove');
   $(document).unbind('mouseup');  
-};
+}
 
 /* **********************************************************************
    Helper functions
@@ -1066,7 +1054,7 @@ function initializeRangeSelectionBox() {
     change: update
   }).slider('value', 1);
   
-  $('#graph-overlay-label-x')
+  $('#graph-overlay-units-x')
     .hCenterInElement()
     .editable(function(value, settings) {
       $(this).hCenterInElement().css('background-color', '#aaa');
@@ -1077,7 +1065,7 @@ function initializeRangeSelectionBox() {
       style: 'display: inline'
     });
   
-  $('#graph-overlay-label-y')
+  $('#graph-overlay-units-y')
     .vCenterInElement()
     .editable(function(value, settings) {
       $(this).vCenterInElement().css('background-color', '#aaa');
@@ -1090,6 +1078,7 @@ function initializeRangeSelectionBox() {
 }
 
 $(document).ready(function() {
+  reset();
   initializeBoard();
   initializeRangeSelectionBox();
   $('#box').aToolTip({

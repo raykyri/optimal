@@ -138,27 +138,27 @@
 #graph-overlay-scale-x
 { 
   position: absolute;
-  left: 50px;
-  bottom: 20px;
-  width: 370px;
+  left: 75px;
+  bottom: 45px;
+  width: 345px;
  }
 
 #graph-overlay-scale-y
 {  
   position: absolute;
-  left: 20px;
-  bottom: 50px;
-  height: 270px;
+  left: 45px;
+  bottom: 75px;
+  height: 245px;
 }
 
 #graph-overlay .minifigure
 { 
   position: absolute;
   border: 1px solid #aaa;
-  left: 51px;
-  bottom: 51px;
-  height: 268px;
-  width: 368px;
+  left: 76px;
+  bottom: 76px;
+  height: 243px;
+  width: 343px;
  }
 
 #graph-overlay .label
@@ -167,26 +167,57 @@
   padding-top: 3px;
  }
 
+#graph-overlay-label-x,
+#graph-overlay-label-y
+{ 
+  background-color: #fff;
+  color: #000;
+  text-shadow: none;
+  text-align: center;
+  width: 200px;
+ }
+
 #graph-overlay-label-x
+{
+  left: 50%;
+  margin-left: -80px;
+  margin-top: -25px;
+  bottom: 10px;
+}
+
+#graph-overlay-label-y
+{
+  left: 10px;
+  margin-top: -20px;
+  margin-left: -95px;
+  top: 50%;
+  -webkit-transform: rotate(-90deg);
+  -moz-transform: rotate(-90deg);
+  -ms-transform: rotate(-90deg);
+  -o-transform: rotate(-90deg);
+  filter: progid:DXImageTransform.Microsoft.BasicImage(rotation=3);
+}
+
+#graph-overlay-units-x
 {
   left: 50%;
   bottom: 15px;
 }
 
-#graph-overlay-label-y
+#graph-overlay-units-y
 {
   left: 15px;
   top: 50%;
 }
 
-#graph-overlay-label-x,
-#graph-overlay-label-y
+#graph-overlay-units-x,
+#graph-overlay-units-y
 { 
   background-color: #ddd;
  }
 
-#graph-overlay-label-x:hover,
-#graph-overlay-label-y:hover
+#graph-overlay-units-x:hover,
+#graph-overlay-units-y:hover
 { 
   background-color: #aaa;
  }
