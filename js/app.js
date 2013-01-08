@@ -4,36 +4,37 @@
 
 var optimalApp = {    
     // app globals
-    functions: [],
-    board: null,
-    tooltip: null,
-    copyMode: true,
-    logXMode: false,
-    logYMode: false,
-    functionmodel: JXG.Math.Numerics.lagrangePolynomial,
-    
-    // for axes
-    xAxisName: null,
-    yAxisName: null,  
-    xLogRange: 0,
-    yLogRange: 0,
-    
-    // for selection
-    selectedFunction: null,
-    selectedBBox: null,
-    
-    // for bounding box for selected functions
-    selectionBasePosition: [0, 0],
-    selectionPosition: [0, 0],
-    selectionOffset: [0, 0],
-    selectionOrigin: [0, 0],
-    selectionRotation: 0,
-    selectionWidth: 0,
-    selectionHeight: 0,
-    selectionBaseWidth: 0,
-    selectionBaseHeight: 0,
-    resizingFrom: null
-  };
+  functions: [],
+  model: null,
+  board: null,
+  tooltip: null,
+  copyMode: true,
+  logXMode: false,
+  logYMode: false,
+  functionmodel: JXG.Math.Numerics.lagrangePolynomial,
+  
+  // for axes
+  xAxisName: null,
+  yAxisName: null,  
+  xLogRange: 0,
+  yLogRange: 0,
+  
+  // for selection
+  selectedFunction: null,
+  selectedBBox: null,
+  
+  // for bounding box for selected functions
+  selectionBasePosition: [0, 0],
+  selectionPosition: [0, 0],
+  selectionOffset: [0, 0],
+  selectionOrigin: [0, 0],
+  selectionRotation: 0,
+  selectionWidth: 0,
+  selectionHeight: 0,
+  selectionBaseWidth: 0,
+  selectionBaseHeight: 0,
+  resizingFrom: null
+};
 
 /* **********************************************************************
    Presets tab
@@ -105,6 +106,7 @@ function setModel(model) {
 
 // switch the type of function graphed
 function switchModel(model) {
+  optimalApp.model = model;
   switch (model) {
   case 'linear':
     optimalApp.functionmodel = function(points) {
@@ -150,6 +152,21 @@ function switchModel(model) {
   default:
     alert('Invalid model to fit function to');
   }
+}
+
+// calls the server
+function submit() {
+  var data = $.map(optimalApp.functions, function(o,i) {
+    return [o.data];
+  });
+
+  $.post('/api', {
+    data: data, 
+    model: optimalApp.model
+  }, function(result, textStatus, jqxhr) {
+    // return covariance results upon successful API call
+    console.log(result);
+  });
 }
 
 /* **********************************************************************

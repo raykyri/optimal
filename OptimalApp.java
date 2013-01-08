@@ -8,6 +8,7 @@ public class OptimalApp {
 
     setPort(8000);
     
+    // serve html app
     get(new Route("/") {
         @Override
         public Object handle(Request request, Response response) {
@@ -28,6 +29,15 @@ public class OptimalApp {
         }
       });
     
+    // serve Java API
+    post(new Route("/api") {
+        @Override
+        public Object handle(Request request, Response response) {
+          return "Success";
+        }
+      });
+    
+    // serve static files
     get(new Route("/:filetype/:filename") {
         @Override
         public Object handle(Request request, Response response) {
